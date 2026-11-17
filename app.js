@@ -1,15 +1,57 @@
 // ========================================
 // MG WATCH & EARN
-// REGISTRATION, LOGIN AND USER DASHBOARD
+// COMPLETE AUTHENTICATION SYSTEM
 // ========================================
 
+// SUPABASE SETTINGS
 const SUPABASE_URL = "https://zcadzmhldvfrqtewfuqs.supabase.co";
-const db = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-);
 
-document.addEventListener("DOMContentLoaded", async function () {
+// IMPORTANT: Replace this with your REAL Supabase publishable key.
+// It normally starts with sb_publishable_
+// NEVER use your Supabase secret key here.
+const SUPABASE_PUBLISHABLE_KEY = "PASTE_YOUR_REAL_PUBLISHABLE_KEY_HERE";
+
+
+// ========================================
+// INITIALISE SUPABASE
+// ========================================
+
+let db = null;
+
+try {
+    if (!window.supabase) {
+        throw new Error("Supabase library did not load.");
+    }
+
+    if (
+        !SUPABASE_PUBLISHABLE_KEY ||
+        SUPABASE_PUBLISHABLE_KEY === "PASTE_YOUR_REAL_PUBLISHABLE_KEY_HERE"
+    ) {
+        throw new Error("Your Supabase publishable key has not been added.");
+    }
+
+    db = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        }
+    );
+
+} catch (error) {
+    console.error("Supabase initialisation error:", error);
+}
+
+
+// ========================================
+// MAIN WEBSITE SYSTEM
+// ========================================
+
+document.addEventListener("DOMContentLoaded", function () {
 
     const registerForm = document.getElementById("registerForm");
     const loginForm = document.getElementById("loginForm");
@@ -19,117 +61,295 @@ document.addEventListener("DOMContentLoaded", async function () {
     const dashboard = document.getElementById("userDashboard");
     const userEmail = document.getElementById("userEmail");
 
+    if (!registerForm || !loginForm || !message || !dashboard) {
+        console.error("MG WATCH & EARN: Required HTML elements are missing.");
+        return;
+    }
+
+    // ========================================
+    // MESSAGE SYSTEM
+    // ========================================
+
     function showMessage(text, success = false) {
         message.textContent = text;
         message.style.color = success ? "#00e5a0" : "#ff7777";
     }
 
-    async function updateDashboard() {
+    function explainError(error) {
+        console.error("MG WATCH & EARN error:", error);
 
-        const { data, error } = await db.auth.getUser();
-
-        if (error) {
-            showMessage(error.message);
-            return;
+        if (!navigator.onLine) {
+            return "You appear to be offline. Please check your internet connection.";
         }
 
-        const user = data.user;
+        const errorText = error?.message || String(error);
 
-        if (user) {
-            dashboard.hidden = false;
+        if (
+            error instanceof TypeError ||
+            errorText.toLowerCase().includes("failed to fetch")
+        ) {
+            return "Connection failed. Check your internet, Supabase project URL, publishable key and Supabase project status.";
+        }
+
+        return errorText;
+    }
+
+    function setFormLoading(form, loading) {
+        const buttons = form.querySelectorAll('button[type="submit"]');
+
+        buttons.forEach(function (button) {
+            button.disabled = loading;
+            button.textContent = loading
+                ? "Please wait..."
+                : button.dataset.originalText || button.textContent;
+        });
+    }
+
+    document.querySelectorAll('form button[type="submit"]').forEach(function (button) {
+        button.dataset.originalText = button.textContent;
+    });
+
+
+    // ========================================
+    // DASHBOARD
+    // ========================================
+
+    function showDashboard(user) {
+        dashboard.hidden = false;
+        registerForm.hidden = true;
+        loginForm.hidden = true;
+
+        if (userEmail) {
             userEmail.textContent = "Email: " + user.email;
-            registerForm.hidden = true;
-            loginForm.hidden = true;
-        } else {
-            dashboard.hidden = true;
-            registerForm.hidden = false;
-            loginForm.hidden = false;
         }
     }
 
-    // REGISTRATION
+    function showLoginForms() {
+        dashboard.hidden = true;
+        registerForm.hidden = false;
+        loginForm.hidden = false;
+    }
+
+
+    // ========================================
+    // CHECK EXISTING LOGIN SESSION
+    // ========================================
+
+    async function checkSession() {
+
+        if (!db) {
+            showMessage("Setup incomplete. Please check your Supabase publishable key.");
+            return;
+        }
+
+        try {
+            const { data, error } = await db.auth.getSession();
+
+            if (error) {
+                throw error;
+            }
+
+            if (data.session) {
+                showDashboard(data.session.user);
+            } else {
+                showLoginForms();
+            }
+
+        } catch (error) {
+            showLoginForms();
+            showMessage(explainError(error));
+        }
+    }
+
+
+    // ========================================
+    // REGISTER NEW ACCOUNT
+    // ========================================
 
     registerForm.addEventListener("submit", async function (event) {
 
         event.preventDefault();
 
-        const email = document.getElementById("registerEmail").value.trim();
-        const password = document.getElementById("registerPassword").value;
-
-        showMessage("Creating your account...");
-
-        const { data, error } = await db.auth.signUp({
-            email,
-            password,
-            options: {
-                emailRedirectTo: window.location.origin +
-                    window.location.pathname
-            }
-        });
-
-        if (error) {
-            showMessage(error.message);
+        if (!db) {
+            showMessage("Supabase is not configured. Check your publishable key.");
             return;
         }
 
-        if (data.session) {
-            showMessage("Account created successfully!", true);
-            await updateDashboard();
-        } else {
-            showMessage(
-                "Registration received! Please check your email to verify your account.",
-                true
-            );
+        const email = document.getElementById("registerEmail").value.trim();
+        const password = document.getElementById("registerPassword").value;
+
+        if (!email || !password) {
+            showMessage("Please enter your email and password.");
+            return;
         }
 
-        registerForm.reset();
+        if (password.length < 8) {
+            showMessage("Your password must contain at least 8 characters.");
+            return;
+        }
+
+        setFormLoading(registerForm, true);
+        showMessage("Creating your account...", true);
+
+        try {
+
+            const { data, error } = await db.auth.signUp({
+                email: email,
+                password: password,
+                options: {
+                    emailRedirectTo: window.location.origin +
+                        window.location.pathname
+                }
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            if (data.session) {
+                showMessage("Your account has been created successfully!", true);
+                showDashboard(data.session.user);
+            } else {
+                showMessage(
+                    "Registration successful! Please check your email for a verification link.",
+                    true
+                );
+            }
+
+            registerForm.reset();
+
+        } catch (error) {
+            showMessage(explainError(error));
+
+        } finally {
+            setFormLoading(registerForm, false);
+        }
+
     });
 
+
+    // ========================================
     // LOGIN
+    // ========================================
 
     loginForm.addEventListener("submit", async function (event) {
 
         event.preventDefault();
 
+        if (!db) {
+            showMessage("Supabase is not configured. Check your publishable key.");
+            return;
+        }
+
         const email = document.getElementById("loginEmail").value.trim();
         const password = document.getElementById("loginPassword").value;
 
-        showMessage("Logging in...");
+        if (!email || !password) {
+            showMessage("Please enter your email and password.");
+            return;
+        }
 
-        const { error } = await db.auth.signInWithPassword({
-            email,
-            password
+        setFormLoading(loginForm, true);
+        showMessage("Logging into your account...", true);
+
+        try {
+
+            const { data, error } = await db.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+
+            if (error) {
+                throw error;
+            }
+
+            showMessage("Welcome to MG WATCH & EARN!", true);
+            loginForm.reset();
+
+            showDashboard(data.user);
+
+        } catch (error) {
+            showMessage(explainError(error));
+
+        } finally {
+            setFormLoading(loginForm, false);
+        }
+
+    });
+
+
+    // ========================================
+    // LOGOUT
+    // ========================================
+
+    if (logoutButton) {
+
+        logoutButton.addEventListener("click", async function () {
+
+            if (!db) {
+                showMessage("Supabase is not configured.");
+                return;
+            }
+
+            logoutButton.disabled = true;
+
+            try {
+
+                const { error } = await db.auth.signOut();
+
+                if (error) {
+                    throw error;
+                }
+
+                showLoginForms();
+                showMessage("You have logged out successfully.", true);
+
+            } catch (error) {
+                showMessage(explainError(error));
+
+            } finally {
+                logoutButton.disabled = false;
+            }
+
         });
 
-        if (error) {
-            showMessage(error.message);
-            return;
-        }
+    }
 
-        showMessage("Welcome to MG WATCH & EARN!", true);
 
-        loginForm.reset();
-        await updateDashboard();
+    // ========================================
+    // AUTOMATIC LOGIN SESSION UPDATES
+    // ========================================
+
+    if (db) {
+        db.auth.onAuthStateChange(function (event, session) {
+
+            if (session) {
+                showDashboard(session.user);
+            } else if (event === "SIGNED_OUT") {
+                showLoginForms();
+            }
+
+        });
+    }
+
+
+    // ========================================
+    // INTERNET CONNECTION STATUS
+    // ========================================
+
+    window.addEventListener("offline", function () {
+        showMessage("Your internet connection has been lost.");
     });
 
-    // LOGOUT
-
-    logoutButton.addEventListener("click", async function () {
-
-        const { error } = await db.auth.signOut();
-
-        if (error) {
-            showMessage(error.message);
-            return;
-        }
-
-        showMessage("You have logged out successfully.", true);
-
-        await updateDashboard();
+    window.addEventListener("online", function () {
+        showMessage("Internet connection restored. You can continue.", true);
     });
 
-    // CHECK LOGIN STATUS
 
-    await updateDashboard();
+    // ========================================
+    // START WEBSITE
+    // ========================================
+
+    checkSession();
 
 });
