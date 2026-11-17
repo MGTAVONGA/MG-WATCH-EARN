@@ -3,9 +3,7 @@
 // REGISTRATION, LOGIN AND USER DASHBOARD
 // ========================================
 
-const SUPABASE_URL = "https://your-project-id.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_your-key";
-
+const SUPABASE_URL = "https://zcadzmhldvfrqtewfuqs.supabase.co";
 const db = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_PUBLISHABLE_KEY
