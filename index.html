@@ -1,178 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MG WATCH & EARN</title>    
-    <link rel="stylesheet" href="styles.css">
-    <script src="app.js" defer></script>
-    <meta name="description" content="Watch videos, discover entertainment and earn rewards with MG WATCH & EARN.">
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+\<!DOCTYPE html>
 
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #101827;
-            color: white;
-        }
+\<html lang="en"> \<head>     \<meta charset="UTF-8">     \<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        header {
-            background: #07111f;
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+```
+<title>MG WATCH & EARN</title>
+<meta name="description" content="Watch videos, discover entertainment and earn rewards with MG WATCH & EARN.">
 
-        header h1 {
-            color: #00e5a0;
-            margin: 0;
-        }
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js" defer></script>
+```
 
-        nav a {
-            color: white;
-            text-decoration: none;
-            margin: 10px;
-        }
+\</head>
 
-        .hero {
-            text-align: center;
-            padding: 75px 20px;
-            background: linear-gradient(135deg, #102b48, #075c51);
-        }
+\<body>
 
-        .hero h2 {
-            font-size: 38px;
-        }
+\<header>     \<h1>MG WATCH & EARN\</h1>     \<nav>         \<a href="#home">Home\</a>         \<a href="#discover">Discover\</a>         \<a href="#how">How It Works\</a>         \<a href="#account">Account\</a>     \</nav> \</header>
 
-        .hero p {
-            font-size: 18px;
-        }
+\<div class="hero" id="home">     \<h2>WATCH. ENJOY. EARN.\</h2>     \<p>Discover entertainment, sponsored videos and exciting opportunities.\</p>     \<button onclick="document.getElementById('account').scrollIntoView()">         Get Started     \</button> \</div>
 
-        button {
-            background: #00e5a0;
-            color: #07111f;
-            border: none;
-            padding: 14px 25px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+\<section id="discover">     \<h2>Discover Entertainment\</h2>     \<div class="cards">         \<div class="card">             \<h3>🎬 Movies\</h3>             \<p>Discover movies and entertainment.\</p>         \</div>         \<div class="card">             \<h3>▶️ Videos\</h3>             \<p>Explore interesting video content.\</p>         \</div>         \<div class="card">             \<h3>📢 Advertisements\</h3>             \<p>Discover sponsored advertisements.\</p>         \</div>         \<div class="card">             \<h3>⭐ Rewards\</h3>             \<p>Explore opportunities to earn rewards.\</p>         \</div>     \</div> \</section>
 
-        section {
-            padding: 35px 20px;
-            text-align: center;
-        }
+\<section id="how">     \<h2>How MG WATCH & EARN Works\</h2>     \<div class="cards">         \<div class="card">             \<h3>1. Register\</h3>             \<p>Create your account.\</p>         \</div>         \<div class="card">             \<h3>2. Watch\</h3>             \<p>Discover available sponsored content.\</p>         \</div>         \<div class="card">             \<h3>3. Earn\</h3>             \<p>Receive eligible rewards.\</p>         \</div>     \</div> \</section>
 
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            max-width: 1100px;
-            margin: auto;
-        }
+\<section id="account">     \<h2>Join MG WATCH & EARN\</h2>
 
-        .card {
-            background: #1d2a3d;
-            padding: 25px;
-            border-radius: 10px;
-        }
+```
+<div class="card">
+    <h3>Create Account</h3>
+    <form id="registerForm">
+        <input type="email" id="registerEmail"
+            placeholder="Email address" required>
 
-        .card h3 {
-            color: #00e5a0;
-        }
+        <input type="password" id="registerPassword"
+            placeholder="Create password" required minlength="8">
 
-        footer {
-            background: #07111f;
-            text-align: center;
-            padding: 25px;
-            color: #aaa;
-        }
-    </style>
-</head>
-
-<body>
-
-<header>
-    <h1>MG WATCH & EARN</h1>
-    <nav>
-        <a href="#home">Home</a>
-        <a href="#discover">Discover</a>
-        <a href="#how">How It Works</a>
-        <a href="#account">Account</a>
-    </nav>
-</header>
-
-<div class="hero" id="home">
-    <h2>WATCH. ENJOY. EARN.</h2>
-    <p>Discover entertainment, sponsored videos and exciting opportunities.</p>
-    <button onclick="document.getElementById('account').scrollIntoView()">
-        Get Started
-    </button>
+        <button type="submit">Register</button>
+    </form>
 </div>
 
-<section id="discover">
-    <h2>Discover Entertainment</h2>
+<br>
 
-    <div class="cards">
-        <div class="card">
-            <h3>🎬 Movies</h3>
-            <p>Discover movies and entertainment.</p>
-        </div>
+<div class="card">
+    <h3>Login</h3>
+    <form id="loginForm">
+        <input type="email" id="loginEmail"
+            placeholder="Email address" required>
 
-        <div class="card">
-            <h3>▶️ Videos</h3>
-            <p>Explore interesting video content.</p>
-        </div>
+        <input type="password" id="loginPassword"
+            placeholder="Password" required>
 
-        <div class="card">
-            <h3>📢 Advertisements</h3>
-            <p>Discover sponsored advertisements.</p>
-        </div>
+        <button type="submit">Login</button>
+    </form>
+</div>
 
-        <div class="card">
-            <h3>⭐ Rewards</h3>
-            <p>Explore opportunities to earn rewards.</p>
-        </div>
-    </div>
-</section>
+<div id="userDashboard" hidden>
+    <h3>Welcome to MG WATCH & EARN!</h3>
+    <p id="userEmail"></p>
+    <button id="logoutButton">Logout</button>
+</div>
 
-<section id="how">
-    <h2>How MG WATCH & EARN Works</h2>
-    <div class="cards">
-        <div class="card">
-            <h3>1. Register</h3>
-            <p>Create your account.</p>
-        </div>
+<p id="authMessage"></p>
+```
 
-        <div class="card">
-            <h3>2. Watch</h3>
-            <p>Discover available sponsored content.</p>
-        </div>
+\</section>
 
-        <div class="card">
-            <h3>3. Earn</h3>
-            <p>Receive eligible rewards according to the platform rules.</p>
-        </div>
-    </div>
-</section>
+\<footer>     \<p>© 2026 MG WATCH & EARN. All rights reserved.\</p>     \<p>Think Smart. Watch Smart. Earn Smart.\</p> \</footer>
 
-<section id="account">
-    <h2>Join MG WATCH & EARN</h2>
-    <p>Create your account and become part of our community.</p>
-    <button onclick="alert('Account registration will be available soon!')">
-        Register Now
-    </button>
-</section>
-
-<footer>
-    <p>© 2026 MG WATCH & EARN. All rights reserved.</p>
-    <p>Think Smart. Watch Smart. Earn Smart.</p>
-</footer>
-
-</body>
-</html>
+\</body> \</html>
