@@ -1,4 +1,3 @@
-```javascript
 // ========================================
 // MG WATCH & EARN
 // COMPLETE AUTHENTICATION SYSTEM
@@ -9,7 +8,6 @@ const SUPABASE_URL = "https://zcadzmhldvfrqtewfuqs.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
 
-
 // ========================================
 // INITIALISE SUPABASE
 // ========================================
@@ -19,10 +17,6 @@ let db = null;
 try {
     if (!window.supabase) {
         throw new Error("Supabase library did not load.");
-    }
-
-    if (!SUPABASE_PUBLISHABLE_KEY) {
-        throw new Error("Supabase publishable key is missing.");
     }
 
     db = window.supabase.createClient(
@@ -40,7 +34,6 @@ try {
 } catch (error) {
     console.error("Supabase initialisation error:", error);
 }
-
 
 // ========================================
 // MAIN WEBSITE SYSTEM
@@ -70,16 +63,13 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("MG WATCH & EARN error:", error);
 
         if (!navigator.onLine) {
-            return "You appear to be offline. Please check your internet connection.";
+            return "Please check your internet connection.";
         }
 
         const errorText = error?.message || String(error);
 
-        if (
-            error instanceof TypeError ||
-            errorText.toLowerCase().includes("failed to fetch")
-        ) {
-            return "Connection failed. Check your internet, Supabase project URL, publishable key and Supabase project status.";
+        if (errorText.toLowerCase().includes("failed to fetch")) {
+            return "Connection failed. Check your Supabase settings.";
         }
 
         return errorText;
@@ -92,14 +82,13 @@ document.addEventListener("DOMContentLoaded", function () {
             button.disabled = loading;
             button.textContent = loading
                 ? "Please wait..."
-                : button.dataset.originalText || button.textContent;
+                : button.dataset.originalText;
         });
     }
 
     document.querySelectorAll('form button[type="submit"]').forEach(function (button) {
         button.dataset.originalText = button.textContent;
     });
-
 
     // ========================================
     // DASHBOARD
@@ -121,15 +110,14 @@ document.addEventListener("DOMContentLoaded", function () {
         loginForm.hidden = false;
     }
 
-
     // ========================================
-    // CHECK EXISTING LOGIN SESSION
+    // CHECK EXISTING SESSION
     // ========================================
 
     async function checkSession() {
 
         if (!db) {
-            showMessage("Setup incomplete. Please check your Supabase configuration.");
+            showMessage("Supabase configuration error.");
             return;
         }
 
@@ -150,30 +138,24 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
-
     // ========================================
-    // REGISTER NEW ACCOUNT
+    // REGISTRATION
     // ========================================
 
     registerForm.addEventListener("submit", async function (event) {
 
         event.preventDefault();
 
-        if (!db) {
-            showMessage("Supabase is not configured.");
-            return;
-        }
-
         const email = document.getElementById("registerEmail").value.trim();
         const password = document.getElementById("registerPassword").value;
 
         if (!email || !password) {
-            showMessage("Please enter your email and password.");
+            showMessage("Enter your email and password.");
             return;
         }
 
         if (password.length < 8) {
-            showMessage("Your password must contain at least 8 characters.");
+            showMessage("Password must contain at least 8 characters.");
             return;
         }
 
@@ -183,8 +165,8 @@ document.addEventListener("DOMContentLoaded", function () {
         try {
 
             const { data, error } = await db.auth.signUp({
-                email: email,
-                password: password,
+                email,
+                password,
                 options: {
                     emailRedirectTo: window.location.origin +
                         window.location.pathname
@@ -194,11 +176,11 @@ document.addEventListener("DOMContentLoaded", function () {
             if (error) throw error;
 
             if (data.session) {
-                showMessage("Your account has been created successfully!", true);
+                showMessage("Account created successfully!", true);
                 showDashboard(data.session.user);
             } else {
                 showMessage(
-                    "Registration successful! Please check your email for verification.",
+                    "Registration successful! Check your email for verification.",
                     true
                 );
             }
@@ -211,9 +193,7 @@ document.addEventListener("DOMContentLoaded", function () {
         } finally {
             setFormLoading(registerForm, false);
         }
-
     });
-
 
     // ========================================
     // LOGIN
@@ -223,32 +203,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
         event.preventDefault();
 
-        if (!db) {
-            showMessage("Supabase is not configured.");
-            return;
-        }
-
         const email = document.getElementById("loginEmail").value.trim();
         const password = document.getElementById("loginPassword").value;
 
         if (!email || !password) {
-            showMessage("Please enter your email and password.");
+            showMessage("Enter your email and password.");
             return;
         }
 
         setFormLoading(loginForm, true);
-        showMessage("Logging into your account...", true);
+        showMessage("Logging in...", true);
 
         try {
 
             const { data, error } = await db.auth.signInWithPassword({
-                email: email,
-                password: password
+                email,
+                password
             });
 
             if (error) throw error;
 
             showMessage("Welcome to MG WATCH & EARN!", true);
+
             loginForm.reset();
 
             showDashboard(data.user);
@@ -259,9 +235,7 @@ document.addEventListener("DOMContentLoaded", function () {
         } finally {
             setFormLoading(loginForm, false);
         }
-
     });
-
 
     // ========================================
     // LOGOUT
@@ -270,11 +244,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (logoutButton) {
 
         logoutButton.addEventListener("click", async function () {
-
-            if (!db) {
-                showMessage("Supabase is not configured.");
-                return;
-            }
 
             logoutButton.disabled = true;
 
@@ -285,7 +254,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (error) throw error;
 
                 showLoginForms();
-                showMessage("You have logged out successfully.", true);
+
+                showMessage("Successfully logged out.", true);
 
             } catch (error) {
                 showMessage(explainError(error));
@@ -293,41 +263,34 @@ document.addEventListener("DOMContentLoaded", function () {
             } finally {
                 logoutButton.disabled = false;
             }
-
-        });
-
-    }
-
-
-    // ========================================
-    // AUTOMATIC LOGIN SESSION UPDATES
-    // ========================================
-
-    if (db) {
-        db.auth.onAuthStateChange(function (event, session) {
-
-            if (session) {
-                showDashboard(session.user);
-            } else if (event === "SIGNED_OUT") {
-                showLoginForms();
-            }
-
         });
     }
 
+    // ========================================
+    // AUTHENTICATION STATE
+    // ========================================
+
+    db.auth.onAuthStateChange(function (event, session) {
+
+        if (session) {
+            showDashboard(session.user);
+        } else if (event === "SIGNED_OUT") {
+            showLoginForms();
+        }
+
+    });
 
     // ========================================
-    // INTERNET CONNECTION STATUS
+    // INTERNET STATUS
     // ========================================
 
     window.addEventListener("offline", function () {
-        showMessage("Your internet connection has been lost.");
+        showMessage("Internet connection lost.");
     });
 
     window.addEventListener("online", function () {
-        showMessage("Internet connection restored. You can continue.", true);
+        showMessage("Internet connection restored.", true);
     });
-
 
     // ========================================
     // START WEBSITE
@@ -336,4 +299,3 @@ document.addEventListener("DOMContentLoaded", function () {
     checkSession();
 
 });
-```
