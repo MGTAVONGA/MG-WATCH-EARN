@@ -1,3 +1,4 @@
+```javascript
 // ========================================
 // MG WATCH & EARN
 // COMPLETE AUTHENTICATION SYSTEM
@@ -6,10 +7,7 @@
 // SUPABASE SETTINGS
 const SUPABASE_URL = "https://zcadzmhldvfrqtewfuqs.supabase.co";
 
-// IMPORTANT: Replace this with your REAL Supabase publishable key.
-// It normally starts with sb_publishable_
-// NEVER use your Supabase secret key here.
-const SUPABASE_PUBLISHABLE_KEY = "PASTE_YOUR_REAL_PUBLISHABLE_KEY_HERE";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
 
 
 // ========================================
@@ -23,11 +21,8 @@ try {
         throw new Error("Supabase library did not load.");
     }
 
-    if (
-        !SUPABASE_PUBLISHABLE_KEY ||
-        SUPABASE_PUBLISHABLE_KEY === "PASTE_YOUR_REAL_PUBLISHABLE_KEY_HERE"
-    ) {
-        throw new Error("Your Supabase publishable key has not been added.");
+    if (!SUPABASE_PUBLISHABLE_KEY) {
+        throw new Error("Supabase publishable key is missing.");
     }
 
     db = window.supabase.createClient(
@@ -65,10 +60,6 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("MG WATCH & EARN: Required HTML elements are missing.");
         return;
     }
-
-    // ========================================
-    // MESSAGE SYSTEM
-    // ========================================
 
     function showMessage(text, success = false) {
         message.textContent = text;
@@ -138,16 +129,14 @@ document.addEventListener("DOMContentLoaded", function () {
     async function checkSession() {
 
         if (!db) {
-            showMessage("Setup incomplete. Please check your Supabase publishable key.");
+            showMessage("Setup incomplete. Please check your Supabase configuration.");
             return;
         }
 
         try {
             const { data, error } = await db.auth.getSession();
 
-            if (error) {
-                throw error;
-            }
+            if (error) throw error;
 
             if (data.session) {
                 showDashboard(data.session.user);
@@ -171,7 +160,7 @@ document.addEventListener("DOMContentLoaded", function () {
         event.preventDefault();
 
         if (!db) {
-            showMessage("Supabase is not configured. Check your publishable key.");
+            showMessage("Supabase is not configured.");
             return;
         }
 
@@ -202,16 +191,14 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             });
 
-            if (error) {
-                throw error;
-            }
+            if (error) throw error;
 
             if (data.session) {
                 showMessage("Your account has been created successfully!", true);
                 showDashboard(data.session.user);
             } else {
                 showMessage(
-                    "Registration successful! Please check your email for a verification link.",
+                    "Registration successful! Please check your email for verification.",
                     true
                 );
             }
@@ -237,7 +224,7 @@ document.addEventListener("DOMContentLoaded", function () {
         event.preventDefault();
 
         if (!db) {
-            showMessage("Supabase is not configured. Check your publishable key.");
+            showMessage("Supabase is not configured.");
             return;
         }
 
@@ -259,9 +246,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 password: password
             });
 
-            if (error) {
-                throw error;
-            }
+            if (error) throw error;
 
             showMessage("Welcome to MG WATCH & EARN!", true);
             loginForm.reset();
@@ -297,9 +282,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 const { error } = await db.auth.signOut();
 
-                if (error) {
-                    throw error;
-                }
+                if (error) throw error;
 
                 showLoginForms();
                 showMessage("You have logged out successfully.", true);
@@ -353,3 +336,4 @@ document.addEventListener("DOMContentLoaded", function () {
     checkSession();
 
 });
+```
