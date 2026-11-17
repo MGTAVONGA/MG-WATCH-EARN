@@ -1,0 +1,1 @@
+MG TECH starter code is supplied for the user project development. Review dependencies and obtain legal/security review before commercial distribution.

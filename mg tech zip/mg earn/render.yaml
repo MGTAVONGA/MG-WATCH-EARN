@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: mg-tech
+    runtime: docker
+    plan: starter
+    region: singapore
+    healthCheckPath: /health
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    disk:
+      name: mg-tech-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: MG_DATABASE
+        value: /data/mg_tech.sqlite3
+      - key: MG_HTTPS_ONLY
+        value: "1"
+      - key: MG_SESSION_SECRET
+        generateValue: true

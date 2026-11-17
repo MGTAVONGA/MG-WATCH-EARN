@@ -1,0 +1,17 @@
+MG TECH — LOGIN DISPLAY + FULL ACADEMY FIX
+
+This update fixes the sign-in panel remaining visible after successful login. It also includes the full Academy interface with 16 lessons, lesson navigation, quizzes, saved course scores, certificate gallery and printable personal completion certificates.
+
+INSTALL ON WINDOWS
+1. Keep a backup copy of your current app.js and styles.css.
+2. In the Command Prompt running MG TECH, press Ctrl+C.
+3. Extract this ZIP.
+4. Copy app.js and styles.css into:
+   C:\Users\MAGUE TECH\OneDrive\Desktop\mg tech zip
+5. Choose Replace if Windows asks.
+6. Do NOT replace server.py and do NOT delete mg_tech.sqlite3. Your accounts and saved progress stay in the database.
+7. Start the server: python -m uvicorn server:app --reload
+8. Open http://127.0.0.1:8000, sign in, then press Ctrl+F5.
+9. Open Learning academy and select Start course or Review course. Completed courses appear in Certificate gallery.
+
+If a certificate does not open, allow pop-ups for the local MG TECH page. Certificates are personal learning records, not accredited qualifications.

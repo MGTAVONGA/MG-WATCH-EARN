@@ -1,0 +1,13 @@
+MG TECH CERTIFICATE DISPLAY FIX
+
+Your dashboard already shows 4 of 4 courses complete. This fix makes the Print course certificate button appear when you reopen a course that is already marked complete.
+
+1. Stop the server in Command Prompt with Ctrl+C.
+2. Back up your existing app.js.
+3. Copy the app.js from this ZIP into your MG TECH project folder, replacing the old app.js.
+4. Do NOT delete or replace mg_tech.sqlite3.
+5. Start the server: python -m uvicorn server:app --reload
+6. Open http://127.0.0.1:8000, sign in, press Ctrl+F5, choose Learning Academy, and open a completed course.
+7. Click Print course certificate. Allow pop-ups if Chrome asks.
+
+The certificate is a personal learning record, not an accredited qualification. If a previous course has no saved score, the certificate will display 100% because the older completion record did not retain a quiz score.

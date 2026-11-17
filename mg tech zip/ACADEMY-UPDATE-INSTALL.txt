@@ -1,0 +1,13 @@
+MG TECH ACADEMY UPDATE
+
+This update adds interactive four-question assessments to each of the four courses, 80% pass requirement, saved quiz scores, and printable personal completion certificates. The server update safely adds a scores column to existing databases.
+
+INSTALL ON WINDOWS
+1. Stop the MG TECH server in Command Prompt with Ctrl+C.
+2. BACK UP your current app.js, styles.css and server.py.
+3. Extract this ZIP. Copy app.js, styles.css and server.py from the ZIP into your existing MG TECH project folder, replacing those three files.
+4. Do NOT delete or replace mg_tech.sqlite3.
+5. Start the server again: python -m uvicorn server:app --reload
+6. Open http://127.0.0.1:8000, sign in, press Ctrl+F5, then open Learning Academy.
+
+Existing accounts and saved course/checklist progress are preserved. Quiz scores are stored in the existing SQLite database. The certificate is a printable personal learning record, not an accredited qualification.

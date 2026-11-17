@@ -1,0 +1,31 @@
+MG TECH — FULL LEARNING ACADEMY UPDATE
+
+WHAT THIS UPDATE ADDS
+- A redesigned Academy page with course cards and progress summary.
+- Four courses, each with four written lessons (16 lessons total).
+- Lesson tabs, previous/next navigation, and a final four-question assessment.
+- Quiz scores and course completion saved using the existing MG TECH progress API.
+- A Certificate Gallery for courses already marked complete.
+- Printable personal course-completion certificates, including a clear note that they are not accredited qualifications.
+- Responsive layout for desktop and mobile screens.
+
+INSTALL ON WINDOWS
+1. Keep a backup copy of your current app.js and styles.css.
+2. Stop MG TECH in Command Prompt with Ctrl+C.
+3. Extract this ZIP.
+4. Copy app.js and styles.css from this ZIP into:
+   C:\Users\MAGUE TECH\OneDrive\Desktop\mg tech zip
+   Choose Replace when Windows asks.
+5. Do NOT replace server.py and do NOT delete mg_tech.sqlite3.
+6. Start MG TECH:
+   python -m uvicorn server:app --reload
+7. Open http://127.0.0.1:8000
+8. Sign in and press Ctrl+F5 to load the updated files.
+9. Open Learning Academy. Select Start course or Review course.
+
+IMPORTANT
+- This update changes only the frontend files app.js and styles.css.
+- It expects the Academy API already installed, including saved quiz scores in /api/me and /api/progress. If your current app.js has the earlier Academy quizzes and saved score feature, that API should already be present.
+- Your existing accounts, database and progress are not deleted or replaced.
+- Certificates are personal learning records and are not accredited qualifications.
+- Pop-ups must be allowed by the browser to open the print certificate window.
