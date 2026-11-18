@@ -1,4 +1,3 @@
-
 // ========================================
 // MG WATCH & EARN
 // AUTHENTICATION + WALLET + ADVERTISEMENTS
@@ -254,10 +253,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     formatMoney(balance, currency);
             }
 
-            // Total earnings require a separate verified
-            // transaction history. Do not assume wallet
-            // balance equals lifetime earnings.
-
             if (totalEarningsElement) {
                 totalEarningsElement.textContent = "$0.00";
             }
@@ -382,6 +377,133 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                     card.appendChild(video);
 
+                    // DEMONSTRATION WATCH TIMER
+                    // This timer does not create or award money.
+
+                    const timerBox = document.createElement("div");
+                    timerBox.className = "watch-timer";
+                    timerBox.style.marginTop = "14px";
+
+                    const requiredSeconds = Math.max(
+                        1,
+                        Math.floor(Number(ad.duration_seconds) || 15)
+                    );
+
+                    const timerLabel = document.createElement("p");
+                    timerLabel.textContent =
+                        "Time watched: 0 / " + requiredSeconds + " seconds";
+
+                    const progress = document.createElement("progress");
+                    progress.max = requiredSeconds;
+                    progress.value = 0;
+                    progress.style.width = "100%";
+                    progress.style.height = "14px";
+
+                    const status = document.createElement("p");
+                    status.textContent =
+                        "Play the video to start the timer.";
+
+                    timerBox.append(timerLabel, progress, status);
+                    card.appendChild(timerBox);
+
+                    let watchedSeconds = 0;
+                    let timerInterval = null;
+                    let lastVideoTime = 0;
+                    let completed = false;
+
+                    function stopWatchTimer() {
+                        if (timerInterval !== null) {
+                            clearInterval(timerInterval);
+                            timerInterval = null;
+                        }
+                    }
+
+                    function updateWatchDisplay() {
+                        timerLabel.textContent =
+                            "Time watched: " + watchedSeconds +
+                            " / " + requiredSeconds + " seconds";
+
+                        progress.value = watchedSeconds;
+                    }
+
+                    video.addEventListener("play", function () {
+
+                        if (completed || timerInterval !== null) return;
+
+                        lastVideoTime = video.currentTime;
+
+                        status.textContent =
+                            "Timer running while the video plays.";
+
+                        timerInterval = setInterval(function () {
+
+                            if (
+                                document.visibilityState !== "visible" ||
+                                video.paused ||
+                                video.ended
+                            ) {
+                                return;
+                            }
+
+                            const currentTime = video.currentTime;
+
+                            const mediaAdvanced =
+                                currentTime > lastVideoTime + 0.1 &&
+                                currentTime - lastVideoTime < 2;
+
+                            lastVideoTime = currentTime;
+
+                            if (mediaAdvanced) {
+
+                                watchedSeconds = Math.min(
+                                    requiredSeconds,
+                                    watchedSeconds + 1
+                                );
+
+                                updateWatchDisplay();
+                            }
+
+                            if (watchedSeconds >= requiredSeconds) {
+
+                                completed = true;
+                                stopWatchTimer();
+                                video.pause();
+
+                                status.textContent =
+                                    "Demonstration viewing complete. No reward has been issued.";
+                            }
+
+                        }, 1000);
+                    });
+
+                    video.addEventListener("pause", function () {
+
+                        stopWatchTimer();
+
+                        if (!completed) {
+                            status.textContent =
+                                "Timer paused. Play the video to continue.";
+                        }
+                    });
+
+                    video.addEventListener("ended", function () {
+
+                        stopWatchTimer();
+
+                        if (!completed) {
+                            status.textContent =
+                                "Video ended. Replay it to continue the demonstration timer.";
+                        }
+                    });
+
+                    video.addEventListener("seeking", function () {
+                        lastVideoTime = video.currentTime;
+                    });
+
+                    video.addEventListener("seeked", function () {
+                        lastVideoTime = video.currentTime;
+                    });
+
                 } else if (ad.video_url) {
 
                     const warning = document.createElement("p");
@@ -401,7 +523,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             advertisementMessage.textContent =
                 "We could not load advertisements. Please refresh and try again.";
-
         }
     }
 
