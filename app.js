@@ -15,7 +15,11 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p
 
 let db = null;
 
-if (window.supabase && window.supabase.createClient) {
+try {
+    if (!window.supabase) {
+        throw new Error("Supabase library not loaded.");
+    }
+
     db = window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_PUBLISHABLE_KEY,
@@ -27,8 +31,9 @@ if (window.supabase && window.supabase.createClient) {
             }
         }
     );
-} else {
-    console.error("Supabase library not loaded.");
+
+} catch (error) {
+    console.error("Supabase error:", error);
 }
 
 // ========================================
@@ -41,14 +46,15 @@ document.addEventListener("DOMContentLoaded", async function () {
     const loginForm = document.getElementById("loginForm");
     const logoutButton = document.getElementById("logoutButton");
 
+    const registration = document.getElementById("registration");
+    const login = document.getElementById("login");
+
     const message = document.getElementById("authMessage");
     const dashboard = document.getElementById("userDashboard");
     const userEmail = document.getElementById("userEmail");
 
-    // Check required HTML elements
-
     if (!registerForm || !loginForm || !message || !dashboard) {
-        console.error("Missing required HTML elements.");
+        console.error("Required website elements missing.");
         return;
     }
 
@@ -69,11 +75,11 @@ document.addEventListener("DOMContentLoaded", async function () {
         const lower = text.toLowerCase();
 
         if (!navigator.onLine) {
-            return "No internet connection. Please reconnect.";
+            return "Please check your internet connection.";
         }
 
         if (lower.includes("failed to fetch")) {
-            return "Unable to connect. Check your internet and Supabase configuration.";
+            return "Connection failed. Please check Supabase and internet settings.";
         }
 
         if (lower.includes("invalid login credentials")) {
@@ -81,15 +87,11 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
 
         if (lower.includes("already registered")) {
-            return "This email already has an account. Please log in.";
+            return "This email is already registered. Please log in.";
         }
 
         if (lower.includes("email not confirmed")) {
             return "Please verify your email before logging in.";
-        }
-
-        if (lower.includes("password")) {
-            return text;
         }
 
         return text;
@@ -117,37 +119,50 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // ========================================
-    // DASHBOARD
+    // SHOW USER DASHBOARD
     // ========================================
 
     function showDashboard(user) {
 
         dashboard.hidden = false;
 
+        if (registration) registration.hidden = true;
+        if (login) login.hidden = true;
+
         registerForm.hidden = true;
         loginForm.hidden = true;
 
         if (userEmail) {
-            userEmail.textContent = user.email || "";
+            userEmail.textContent = "Email: " + (user.email || "");
         }
+
+        window.scrollTo({
+            top: dashboard.offsetTop,
+            behavior: "smooth"
+        });
     }
+
+    // ========================================
+    // SHOW LOGIN AND REGISTRATION
+    // ========================================
 
     function showLoginForms() {
 
         dashboard.hidden = true;
+
+        if (registration) registration.hidden = false;
+        if (login) login.hidden = false;
 
         registerForm.hidden = false;
         loginForm.hidden = false;
     }
 
     // ========================================
-    // SUPABASE CHECK
+    // CHECK SUPABASE
     // ========================================
 
     if (!db) {
-
-        showMessage("Connection error: Supabase did not load.");
-
+        showMessage("Supabase connection failed. Refresh the website.");
         return;
     }
 
@@ -169,26 +184,23 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
 
         if (password.length < 8) {
-            showMessage("Password must have at least 8 characters.");
+            showMessage("Password must contain at least 8 characters.");
             return;
         }
 
         setLoading(registerForm, true);
 
-        showMessage("Creating your MG WATCH & EARN account...", true);
+        showMessage("Creating your account...", true);
 
         try {
 
             const { data, error } = await db.auth.signUp({
-
-                email: email,
-
-                password: password,
-
+                email,
+                password,
                 options: {
-                    emailRedirectTo: window.location.origin + window.location.pathname
+                    emailRedirectTo: window.location.origin +
+                        window.location.pathname
                 }
-
             });
 
             if (error) throw error;
@@ -199,7 +211,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 showDashboard(data.session.user);
 
-                showMessage("Welcome! Your account has been created.", true);
+                showMessage("Your account was created successfully!", true);
 
             } else {
 
@@ -235,9 +247,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         const password = document.getElementById("loginPassword")?.value;
 
         if (!email || !password) {
-
-            showMessage("Please enter your email and password.");
-
+            showMessage("Enter your email and password.");
             return;
         }
 
@@ -248,11 +258,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         try {
 
             const { data, error } = await db.auth.signInWithPassword({
-
-                email: email,
-
-                password: password
-
+                email,
+                password
             });
 
             if (error) throw error;
@@ -261,7 +268,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             showDashboard(data.user);
 
-            showMessage("Successfully logged in. Welcome!", true);
+            showMessage("Welcome to MG WATCH & EARN!", true);
 
         } catch (error) {
 
@@ -295,6 +302,10 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 showMessage("You have successfully logged out.", true);
 
+                document.getElementById("account")?.scrollIntoView({
+                    behavior: "smooth"
+                });
+
             } catch (error) {
 
                 showMessage(explainError(error));
@@ -310,7 +321,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // ========================================
-    // EXISTING SESSION
+    // EXISTING LOGIN SESSION
     // ========================================
 
     async function checkSession() {
@@ -363,16 +374,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     // INTERNET STATUS
     // ========================================
 
-    window.addEventListener("offline", () => {
-
+    window.addEventListener("offline", function () {
         showMessage("Internet connection lost.");
-
     });
 
-    window.addEventListener("online", () => {
-
+    window.addEventListener("online", function () {
         showMessage("Internet connection restored.", true);
-
     });
 
     // ========================================
