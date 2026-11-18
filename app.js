@@ -1,13 +1,15 @@
 // ========================================
 // MG WATCH & EARN
-// COMPLETE AUTHENTICATION SYSTEM
+// AUTHENTICATION + USER WALLET SYSTEM
 // ========================================
 
 // SUPABASE CONFIGURATION
 
-const SUPABASE_URL = "https://zcadzmhldvfrqtewfuqs.supabase.co";
+const SUPABASE_URL =
+"https://zcadzmhldvfrqtewfuqs.supabase.co";
 
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
+const SUPABASE_PUBLISHABLE_KEY =
+"sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
 
 // ========================================
 // INITIALISE SUPABASE
@@ -16,6 +18,7 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p
 let db = null;
 
 try {
+
     if (!window.supabase) {
         throw new Error("Supabase library not loaded.");
     }
@@ -33,7 +36,9 @@ try {
     );
 
 } catch (error) {
+
     console.error("Supabase error:", error);
+
 }
 
 // ========================================
@@ -45,9 +50,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     const registerForm = document.getElementById("registerForm");
     const loginForm = document.getElementById("loginForm");
     const logoutButton = document.getElementById("logoutButton");
-
-    const registration = document.getElementById("registration");
-    const login = document.getElementById("login");
 
     const message = document.getElementById("authMessage");
     const dashboard = document.getElementById("userDashboard");
@@ -63,8 +65,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     function showMessage(text, success = false) {
+
         message.textContent = text;
-        message.style.color = success ? "#00e5a0" : "#ff7777";
+
+        message.style.color = success
+            ? "#00e5a0"
+            : "#ff7777";
+
     }
 
     function explainError(error) {
@@ -79,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
 
         if (lower.includes("failed to fetch")) {
-            return "Connection failed. Please check Supabase and internet settings.";
+            return "Connection failed. Please check your internet and Supabase.";
         }
 
         if (lower.includes("invalid login credentials")) {
@@ -94,7 +101,13 @@ document.addEventListener("DOMContentLoaded", async function () {
             return "Please verify your email before logging in.";
         }
 
+        if (lower.includes("permission denied") ||
+            lower.includes("row-level security")) {
+            return "Database permission error. Please contact support.";
+        }
+
         return text;
+
     }
 
     // ========================================
@@ -102,7 +115,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     document.querySelectorAll('button[type="submit"]').forEach(button => {
+
         button.dataset.originalText = button.textContent;
+
     });
 
     function setLoading(form, loading) {
@@ -116,45 +131,181 @@ document.addEventListener("DOMContentLoaded", async function () {
         button.textContent = loading
             ? "Please wait..."
             : button.dataset.originalText;
+
     }
 
     // ========================================
-    // SHOW USER DASHBOARD
+    // DASHBOARD ELEMENTS
     // ========================================
 
-    function showDashboard(user) {
+    const dashboardCards = dashboard.querySelectorAll(
+        ".dashboard-grid .dashboard-card"
+    );
 
-        dashboard.hidden = false;
+    const totalEarningsElement =
+        dashboardCards[0]?.querySelector(".balance");
 
-        if (registration) registration.hidden = true;
-        if (login) login.hidden = true;
+    const availableBalanceElement =
+        dashboardCards[1]?.querySelector(".balance");
 
-        registerForm.hidden = true;
-        loginForm.hidden = true;
+    const videosWatchedElement =
+        dashboardCards[2]?.querySelector(".balance");
 
-        if (userEmail) {
-            userEmail.textContent = "Email: " + (user.email || "");
+    const rewardsElement =
+        dashboardCards[3]?.querySelector(".balance");
+
+    // ========================================
+    // FORMAT MONEY
+    // ========================================
+
+    function formatMoney(amount) {
+
+        const value = Number(amount);
+
+        if (!Number.isFinite(value)) {
+            return "$0.00";
         }
 
-        window.scrollTo({
-            top: dashboard.offsetTop,
-            behavior: "smooth"
-        });
+        return "$" + value.toFixed(2);
+
     }
 
     // ========================================
-    // SHOW LOGIN AND REGISTRATION
+    // SHOW LOGIN FORMS
     // ========================================
 
     function showLoginForms() {
 
         dashboard.hidden = true;
 
-        if (registration) registration.hidden = false;
-        if (login) login.hidden = false;
-
         registerForm.hidden = false;
         loginForm.hidden = false;
+
+    }
+
+    // ========================================
+    // SHOW DASHBOARD
+    // ========================================
+
+    function showDashboard(user) {
+
+        dashboard.hidden = false;
+
+        registerForm.hidden = true;
+        loginForm.hidden = true;
+
+        if (userEmail) {
+
+            userEmail.textContent =
+                "Email: " + (user.email || "");
+
+        }
+
+        if (totalEarningsElement) {
+            totalEarningsElement.textContent = "$0.00";
+        }
+
+        if (availableBalanceElement) {
+            availableBalanceElement.textContent = "$0.00";
+        }
+
+        if (videosWatchedElement) {
+            videosWatchedElement.textContent = "0";
+        }
+
+        if (rewardsElement) {
+            rewardsElement.textContent = "$0.00";
+        }
+
+    }
+
+    // ========================================
+    // LOAD REAL USER WALLET
+    // ========================================
+
+    async function loadWallet(user) {
+
+        if (!user || !user.id) return;
+
+        try {
+
+            if (availableBalanceElement) {
+                availableBalanceElement.textContent = "Loading...";
+            }
+
+            const { data, error } = await db
+                .from("user_wallets")
+                .select("balance, currency")
+                .eq("user_id", user.id)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!data) {
+
+                if (availableBalanceElement) {
+                    availableBalanceElement.textContent = "Unavailable";
+                }
+
+                console.warn("User wallet not found.");
+
+                return;
+
+            }
+
+            const balance = Number(data.balance);
+
+            if (!Number.isFinite(balance) || balance < 0) {
+                throw new Error("Invalid wallet balance.");
+            }
+
+            const currency = data.currency || "USD";
+
+            const formattedBalance =
+                new Intl.NumberFormat("en-US", {
+                    style: "currency",
+                    currency: currency
+                }).format(balance);
+
+            if (availableBalanceElement) {
+                availableBalanceElement.textContent = formattedBalance;
+            }
+
+            // Earnings remain zero until verified rewards
+            // have been processed by the secure backend.
+
+            if (totalEarningsElement) {
+                totalEarningsElement.textContent = formattedBalance;
+            }
+
+            if (rewardsElement) {
+                rewardsElement.textContent = "$0.00";
+            }
+
+            console.log("MG wallet loaded successfully.");
+
+        } catch (error) {
+
+            console.error("Wallet loading error:", error);
+
+            if (availableBalanceElement) {
+                availableBalanceElement.textContent = "Unavailable";
+            }
+
+        }
+
+    }
+
+    // ========================================
+    // LOAD USER ACCOUNT
+    // ========================================
+
+    async function loadUserAccount(user) {
+
+        showDashboard(user);
+
+        await loadWallet(user);
+
     }
 
     // ========================================
@@ -162,8 +313,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     if (!db) {
-        showMessage("Supabase connection failed. Refresh the website.");
+
+        showMessage(
+            "Supabase connection failed. Refresh the website."
+        );
+
         return;
+
     }
 
     // ========================================
@@ -174,18 +330,28 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         event.preventDefault();
 
-        const email = document.getElementById("registerEmail")?.value.trim();
+        const email = document
+            .getElementById("registerEmail")
+            ?.value.trim();
 
-        const password = document.getElementById("registerPassword")?.value;
+        const password = document
+            .getElementById("registerPassword")
+            ?.value;
 
         if (!email || !password) {
+
             showMessage("Please enter your email and password.");
+
             return;
+
         }
 
         if (password.length < 8) {
+
             showMessage("Password must contain at least 8 characters.");
+
             return;
+
         }
 
         setLoading(registerForm, true);
@@ -195,12 +361,18 @@ document.addEventListener("DOMContentLoaded", async function () {
         try {
 
             const { data, error } = await db.auth.signUp({
+
                 email,
                 password,
+
                 options: {
-                    emailRedirectTo: window.location.origin +
+
+                    emailRedirectTo:
+                        window.location.origin +
                         window.location.pathname
+
                 }
+
             });
 
             if (error) throw error;
@@ -209,14 +381,17 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             if (data.session) {
 
-                showDashboard(data.session.user);
+                await loadUserAccount(data.user);
 
-                showMessage("Your account was created successfully!", true);
+                showMessage(
+                    "Your account was created successfully!",
+                    true
+                );
 
             } else {
 
                 showMessage(
-                    "Registration successful! Please check your email to verify your account.",
+                    "Registration successful! Please verify your email.",
                     true
                 );
 
@@ -242,13 +417,20 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         event.preventDefault();
 
-        const email = document.getElementById("loginEmail")?.value.trim();
+        const email = document
+            .getElementById("loginEmail")
+            ?.value.trim();
 
-        const password = document.getElementById("loginPassword")?.value;
+        const password = document
+            .getElementById("loginPassword")
+            ?.value;
 
         if (!email || !password) {
+
             showMessage("Enter your email and password.");
+
             return;
+
         }
 
         setLoading(loginForm, true);
@@ -257,18 +439,24 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         try {
 
-            const { data, error } = await db.auth.signInWithPassword({
-                email,
-                password
-            });
+            const { data, error } = await db.auth
+                .signInWithPassword({
+
+                    email,
+                    password
+
+                });
 
             if (error) throw error;
 
             loginForm.reset();
 
-            showDashboard(data.user);
+            await loadUserAccount(data.user);
 
-            showMessage("Welcome to MG WATCH & EARN!", true);
+            showMessage(
+                "Welcome to MG WATCH & EARN!",
+                true
+            );
 
         } catch (error) {
 
@@ -300,11 +488,15 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 showLoginForms();
 
-                showMessage("You have successfully logged out.", true);
+                showMessage(
+                    "You have successfully logged out.",
+                    true
+                );
 
-                document.getElementById("account")?.scrollIntoView({
-                    behavior: "smooth"
-                });
+                document.getElementById("account")
+                    ?.scrollIntoView({
+                        behavior: "smooth"
+                    });
 
             } catch (error) {
 
@@ -328,13 +520,14 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         try {
 
-            const { data, error } = await db.auth.getSession();
+            const { data, error } =
+                await db.auth.getSession();
 
             if (error) throw error;
 
             if (data.session) {
 
-                showDashboard(data.session.user);
+                await loadUserAccount(data.session.user);
 
             } else {
 
@@ -343,6 +536,8 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
 
         } catch (error) {
+
+            console.error(error);
 
             showLoginForms();
 
@@ -358,13 +553,23 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     db.auth.onAuthStateChange((event, session) => {
 
-        if (session) {
-
-            showDashboard(session.user);
-
-        } else if (event === "SIGNED_OUT") {
+        if (event === "SIGNED_OUT") {
 
             showLoginForms();
+
+        } else if (
+            session &&
+            (event === "SIGNED_IN" ||
+             event === "TOKEN_REFRESHED" ||
+             event === "USER_UPDATED")
+        ) {
+
+            // Run outside the authentication callback
+            // to avoid blocking Supabase auth operations.
+
+            setTimeout(() => {
+                loadUserAccount(session.user);
+            }, 0);
 
         }
 
@@ -375,11 +580,15 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     window.addEventListener("offline", function () {
+
         showMessage("Internet connection lost.");
+
     });
 
     window.addEventListener("online", function () {
+
         showMessage("Internet connection restored.", true);
+
     });
 
     // ========================================
