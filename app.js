@@ -1,15 +1,16 @@
+
 // ========================================
 // MG WATCH & EARN
-// AUTHENTICATION + USER WALLET SYSTEM
+// AUTHENTICATION + WALLET + ADVERTISEMENTS
 // ========================================
 
 // SUPABASE CONFIGURATION
 
 const SUPABASE_URL =
-"https://zcadzmhldvfrqtewfuqs.supabase.co";
+    "https://zcadzmhldvfrqtewfuqs.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
-"sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
+    "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
 
 // ========================================
 // INITIALISE SUPABASE
@@ -18,7 +19,6 @@ const SUPABASE_PUBLISHABLE_KEY =
 let db = null;
 
 try {
-
     if (!window.supabase) {
         throw new Error("Supabase library not loaded.");
     }
@@ -36,9 +36,7 @@ try {
     );
 
 } catch (error) {
-
     console.error("Supabase error:", error);
-
 }
 
 // ========================================
@@ -55,6 +53,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     const dashboard = document.getElementById("userDashboard");
     const userEmail = document.getElementById("userEmail");
 
+    const advertisementList =
+        document.getElementById("advertisementList");
+
+    const advertisementMessage =
+        document.getElementById("advertisementMessage");
+
     if (!registerForm || !loginForm || !message || !dashboard) {
         console.error("Required website elements missing.");
         return;
@@ -65,13 +69,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     function showMessage(text, success = false) {
-
         message.textContent = text;
-
-        message.style.color = success
-            ? "#00e5a0"
-            : "#ff7777";
-
+        message.style.color = success ? "#00e5a0" : "#ff7777";
     }
 
     function explainError(error) {
@@ -107,7 +106,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
 
         return text;
-
     }
 
     // ========================================
@@ -115,9 +113,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     document.querySelectorAll('button[type="submit"]').forEach(button => {
-
         button.dataset.originalText = button.textContent;
-
     });
 
     function setLoading(form, loading) {
@@ -131,7 +127,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         button.textContent = loading
             ? "Please wait..."
             : button.dataset.originalText;
-
     }
 
     // ========================================
@@ -158,7 +153,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     // FORMAT MONEY
     // ========================================
 
-    function formatMoney(amount) {
+    function formatMoney(amount, currency = "USD") {
 
         const value = Number(amount);
 
@@ -166,8 +161,14 @@ document.addEventListener("DOMContentLoaded", async function () {
             return "$0.00";
         }
 
-        return "$" + value.toFixed(2);
-
+        try {
+            return new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: currency
+            }).format(value);
+        } catch {
+            return "$" + value.toFixed(2);
+        }
     }
 
     // ========================================
@@ -180,7 +181,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         registerForm.hidden = false;
         loginForm.hidden = false;
-
     }
 
     // ========================================
@@ -195,10 +195,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         loginForm.hidden = true;
 
         if (userEmail) {
-
             userEmail.textContent =
                 "Email: " + (user.email || "");
-
         }
 
         if (totalEarningsElement) {
@@ -206,7 +204,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
 
         if (availableBalanceElement) {
-            availableBalanceElement.textContent = "$0.00";
+            availableBalanceElement.textContent = "Loading...";
         }
 
         if (videosWatchedElement) {
@@ -216,11 +214,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (rewardsElement) {
             rewardsElement.textContent = "$0.00";
         }
-
     }
 
     // ========================================
-    // LOAD REAL USER WALLET
+    // LOAD USER WALLET
     // ========================================
 
     async function loadWallet(user) {
@@ -228,10 +225,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (!user || !user.id) return;
 
         try {
-
-            if (availableBalanceElement) {
-                availableBalanceElement.textContent = "Loading...";
-            }
 
             const { data, error } = await db
                 .from("user_wallets")
@@ -242,15 +235,10 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (error) throw error;
 
             if (!data) {
-
                 if (availableBalanceElement) {
                     availableBalanceElement.textContent = "Unavailable";
                 }
-
-                console.warn("User wallet not found.");
-
                 return;
-
             }
 
             const balance = Number(data.balance);
@@ -261,28 +249,18 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             const currency = data.currency || "USD";
 
-            const formattedBalance =
-                new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: currency
-                }).format(balance);
-
             if (availableBalanceElement) {
-                availableBalanceElement.textContent = formattedBalance;
+                availableBalanceElement.textContent =
+                    formatMoney(balance, currency);
             }
 
-            // Earnings remain zero until verified rewards
-            // have been processed by the secure backend.
+            // Total earnings require a separate verified
+            // transaction history. Do not assume wallet
+            // balance equals lifetime earnings.
 
             if (totalEarningsElement) {
-                totalEarningsElement.textContent = formattedBalance;
+                totalEarningsElement.textContent = "$0.00";
             }
-
-            if (rewardsElement) {
-                rewardsElement.textContent = "$0.00";
-            }
-
-            console.log("MG wallet loaded successfully.");
 
         } catch (error) {
 
@@ -291,9 +269,140 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (availableBalanceElement) {
                 availableBalanceElement.textContent = "Unavailable";
             }
+        }
+    }
 
+    // ========================================
+    // SAFE VIDEO URL VALIDATION
+    // ========================================
+
+    function safeVideoURL(value) {
+
+        if (!value) return null;
+
+        try {
+
+            const url = new URL(value);
+
+            if (url.protocol !== "https:") {
+                return null;
+            }
+
+            return url.href;
+
+        } catch {
+            return null;
+        }
+    }
+
+    // ========================================
+    // LOAD ACTIVE ADVERTISEMENTS
+    // ========================================
+
+    async function loadAdvertisements() {
+
+        if (!advertisementList || !advertisementMessage) {
+            return;
         }
 
+        advertisementList.replaceChildren();
+
+        advertisementMessage.textContent =
+            "Loading available advertisements...";
+
+        try {
+
+            const { data, error } = await db
+                .from("advertisements")
+                .select(
+                    "id, title, description, video_url, advertiser_name, duration_seconds"
+                )
+                .eq("status", "active")
+                .order("created_at", { ascending: false });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+
+                advertisementMessage.textContent =
+                    "No sponsored advertisements are available right now. Please check again later.";
+
+                return;
+            }
+
+            advertisementMessage.textContent =
+                data.length + " sponsored campaign(s) available.";
+
+            data.forEach(ad => {
+
+                const card = document.createElement("div");
+
+                card.className = "advertisement-card";
+
+                const title = document.createElement("h3");
+                title.textContent = ad.title || "Sponsored advertisement";
+
+                const description = document.createElement("p");
+                description.textContent =
+                    ad.description || "Discover this sponsored campaign.";
+
+                card.appendChild(title);
+
+                if (ad.advertiser_name) {
+
+                    const advertiser = document.createElement("p");
+
+                    advertiser.textContent =
+                        "Sponsored by: " + ad.advertiser_name;
+
+                    card.appendChild(advertiser);
+                }
+
+                card.appendChild(description);
+
+                const duration = document.createElement("p");
+
+                duration.textContent =
+                    "Video duration: " +
+                    (Number(ad.duration_seconds) || 30) +
+                    " seconds";
+
+                card.appendChild(duration);
+
+                const videoURL = safeVideoURL(ad.video_url);
+
+                if (videoURL) {
+
+                    const video = document.createElement("video");
+
+                    video.controls = true;
+                    video.preload = "metadata";
+                    video.playsInline = true;
+                    video.src = videoURL;
+
+                    card.appendChild(video);
+
+                } else if (ad.video_url) {
+
+                    const warning = document.createElement("p");
+
+                    warning.textContent =
+                        "This video link cannot currently be displayed.";
+
+                    card.appendChild(warning);
+                }
+
+                advertisementList.appendChild(card);
+            });
+
+        } catch (error) {
+
+            console.error("Advertisement loading error:", error);
+
+            advertisementMessage.textContent =
+                "We could not load advertisements. Please refresh and try again.";
+
+        }
     }
 
     // ========================================
@@ -304,8 +413,10 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         showDashboard(user);
 
-        await loadWallet(user);
-
+        await Promise.all([
+            loadWallet(user),
+            loadAdvertisements()
+        ]);
     }
 
     // ========================================
@@ -319,7 +430,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         );
 
         return;
-
     }
 
     // ========================================
@@ -339,19 +449,13 @@ document.addEventListener("DOMContentLoaded", async function () {
             ?.value;
 
         if (!email || !password) {
-
             showMessage("Please enter your email and password.");
-
             return;
-
         }
 
         if (password.length < 8) {
-
             showMessage("Password must contain at least 8 characters.");
-
             return;
-
         }
 
         setLoading(registerForm, true);
@@ -366,11 +470,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                 password,
 
                 options: {
-
                     emailRedirectTo:
                         window.location.origin +
                         window.location.pathname
-
                 }
 
             });
@@ -394,7 +496,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     "Registration successful! Please verify your email.",
                     true
                 );
-
             }
 
         } catch (error) {
@@ -404,7 +505,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         } finally {
 
             setLoading(registerForm, false);
-
         }
 
     });
@@ -426,11 +526,8 @@ document.addEventListener("DOMContentLoaded", async function () {
             ?.value;
 
         if (!email || !password) {
-
             showMessage("Enter your email and password.");
-
             return;
-
         }
 
         setLoading(loginForm, true);
@@ -441,10 +538,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             const { data, error } = await db.auth
                 .signInWithPassword({
-
                     email,
                     password
-
                 });
 
             if (error) throw error;
@@ -465,7 +560,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         } finally {
 
             setLoading(loginForm, false);
-
         }
 
     });
@@ -505,11 +599,9 @@ document.addEventListener("DOMContentLoaded", async function () {
             } finally {
 
                 logoutButton.disabled = false;
-
             }
 
         });
-
     }
 
     // ========================================
@@ -532,7 +624,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             } else {
 
                 showLoginForms();
-
             }
 
         } catch (error) {
@@ -542,9 +633,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             showLoginForms();
 
             showMessage(explainError(error));
-
         }
-
     }
 
     // ========================================
@@ -559,18 +648,16 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         } else if (
             session &&
-            (event === "SIGNED_IN" ||
-             event === "TOKEN_REFRESHED" ||
-             event === "USER_UPDATED")
+            (
+                event === "SIGNED_IN" ||
+                event === "TOKEN_REFRESHED" ||
+                event === "USER_UPDATED"
+            )
         ) {
-
-            // Run outside the authentication callback
-            // to avoid blocking Supabase auth operations.
 
             setTimeout(() => {
                 loadUserAccount(session.user);
             }, 0);
-
         }
 
     });
@@ -580,15 +667,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     window.addEventListener("offline", function () {
-
         showMessage("Internet connection lost.");
-
     });
 
     window.addEventListener("online", function () {
-
         showMessage("Internet connection restored.", true);
-
     });
 
     // ========================================
