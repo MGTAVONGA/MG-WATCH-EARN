@@ -1,426 +1,268 @@
 // ========================================
-// LOAD ACTIVE ADVERTISEMENTS
-// SECURE SUPABASE VIEWING SYSTEM
+// MG WATCH & EARN
+// AUTHENTICATION + WALLET + ADVERTISEMENTS
 // ========================================
 
-async function loadAdvertisements() {
+// SUPABASE CONFIGURATION
 
-    if (!advertisementList || !advertisementMessage) {
+const SUPABASE_URL =
+    "https://zcadzmhldvfrqtewfuqs.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
+
+// ========================================
+// INITIALISE SUPABASE
+// ========================================
+
+let db = null;
+
+try {
+    if (!window.supabase) {
+        throw new Error("Supabase library not loaded.");
+    }
+
+    db = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY,
+        {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true
+            }
+        }
+    );
+
+} catch (error) {
+    console.error("Supabase error:", error);
+}
+
+// ========================================
+// MAIN WEBSITE
+// ========================================
+
+document.addEventListener("DOMContentLoaded", async function () {
+
+    const registerForm = document.getElementById("registerForm");
+    const loginForm = document.getElementById("loginForm");
+    const logoutButton = document.getElementById("logoutButton");
+
+    const message = document.getElementById("authMessage");
+    const dashboard = document.getElementById("userDashboard");
+    const userEmail = document.getElementById("userEmail");
+
+    const advertisementList =
+        document.getElementById("advertisementList");
+
+    const advertisementMessage =
+        document.getElementById("advertisementMessage");
+
+    if (!registerForm || !loginForm || !message || !dashboard) {
+        console.error("Required website elements missing.");
         return;
     }
 
-    advertisementList.replaceChildren();
+    // ========================================
+    // MESSAGE SYSTEM
+    // ========================================
 
-    advertisementMessage.textContent =
-        "Loading available advertisements...";
+    function showMessage(text, success = false) {
+        message.textContent = text;
+        message.style.color = success ? "#00e5a0" : "#ff7777";
+    }
 
-    try {
+    function explainError(error) {
 
-        const { data, error } = await db
-            .from("advertisements")
-            .select(
-                "id, title, description, video_url, advertiser_name, duration_seconds"
-            )
-            .eq("status", "active")
-            .order("created_at", { ascending: false });
+        console.error("MG WATCH & EARN:", error);
 
-        if (error) throw error;
+        const text = error?.message || String(error);
+        const lower = text.toLowerCase();
 
-        if (!data || data.length === 0) {
-
-            advertisementMessage.textContent =
-                "No sponsored advertisements are available right now. Please check again later.";
-
-            return;
+        if (!navigator.onLine) {
+            return "Please check your internet connection.";
         }
 
-        advertisementMessage.textContent =
-            data.length + " sponsored campaign(s) available.";
+        if (lower.includes("failed to fetch")) {
+            return "Connection failed. Please check your internet and Supabase.";
+        }
 
-        data.forEach(ad => {
+        if (lower.includes("invalid login credentials")) {
+            return "Incorrect email or password.";
+        }
 
-            const card = document.createElement("div");
-            card.className = "advertisement-card";
+        if (lower.includes("already registered")) {
+            return "This email is already registered. Please log in.";
+        }
 
-            const title = document.createElement("h3");
-            title.textContent =
-                ad.title || "Sponsored advertisement";
+        if (lower.includes("email not confirmed")) {
+            return "Please verify your email before logging in.";
+        }
 
-            const advertiser = document.createElement("p");
-            advertiser.textContent =
-                "Sponsored by: " +
-                (ad.advertiser_name || "MG WATCH & EARN");
+        if (lower.includes("permission denied") ||
+            lower.includes("row-level security")) {
+            return "Database permission error. Please contact support.";
+        }
 
-            const description = document.createElement("p");
-            description.textContent =
-                ad.description || "Discover this sponsored campaign.";
+        return text;
+    }
 
-            const duration = Math.max(
-                1,
-                Math.floor(Number(ad.duration_seconds) || 30)
-            );
+    // ========================================
+    // LOADING BUTTONS
+    // ========================================
 
-            const durationText = document.createElement("p");
-            durationText.textContent =
-                "Video duration: " + duration + " seconds";
+    document.querySelectorAll('button[type="submit"]').forEach(button => {
+        button.dataset.originalText = button.textContent;
+    });
 
-            card.append(
-                title,
-                advertiser,
-                description,
-                durationText
-            );
+    function setLoading(form, loading) {
 
-            const videoURL = safeVideoURL(ad.video_url);
+        const button = form.querySelector('button[type="submit"]');
 
-            if (!videoURL) {
+        if (!button) return;
 
-                const warning = document.createElement("p");
-                warning.textContent =
-                    "This video link cannot currently be displayed.";
+        button.disabled = loading;
 
-                card.appendChild(warning);
-                advertisementList.appendChild(card);
+        button.textContent = loading
+            ? "Please wait..."
+            : button.dataset.originalText;
+    }
+
+    // ========================================
+    // DASHBOARD ELEMENTS
+    // ========================================
+
+    const dashboardCards = dashboard.querySelectorAll(
+        ".dashboard-grid .dashboard-card"
+    );
+
+    const totalEarningsElement =
+        dashboardCards[0]?.querySelector(".balance");
+
+    const availableBalanceElement =
+        dashboardCards[1]?.querySelector(".balance");
+
+    const videosWatchedElement =
+        dashboardCards[2]?.querySelector(".balance");
+
+    const rewardsElement =
+        dashboardCards[3]?.querySelector(".balance");
+
+    // ========================================
+    // FORMAT MONEY
+    // ========================================
+
+    function formatMoney(amount, currency = "USD") {
+
+        const value = Number(amount);
+
+        if (!Number.isFinite(value)) {
+            return "$0.00";
+        }
+
+        try {
+            return new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: currency
+            }).format(value);
+        } catch {
+            return "$" + value.toFixed(2);
+        }
+    }
+
+    // ========================================
+    // SHOW LOGIN FORMS
+    // ========================================
+
+    function showLoginForms() {
+
+        dashboard.hidden = true;
+
+        registerForm.hidden = false;
+        loginForm.hidden = false;
+    }
+
+    // ========================================
+    // SHOW DASHBOARD
+    // ========================================
+
+    function showDashboard(user) {
+
+        dashboard.hidden = false;
+
+        registerForm.hidden = true;
+        loginForm.hidden = true;
+
+        if (userEmail) {
+            userEmail.textContent =
+                "Email: " + (user.email || "");
+        }
+
+        if (totalEarningsElement) {
+            totalEarningsElement.textContent = "$0.00";
+        }
+
+        if (availableBalanceElement) {
+            availableBalanceElement.textContent = "Loading...";
+        }
+
+        if (videosWatchedElement) {
+            videosWatchedElement.textContent = "0";
+        }
+
+        if (rewardsElement) {
+            rewardsElement.textContent = "$0.00";
+        }
+    }
+
+    // ========================================
+    // LOAD USER WALLET
+    // ========================================
+
+    async function loadWallet(user) {
+
+        if (!user || !user.id) return;
+
+        try {
+
+            const { data, error } = await db
+                .from("user_wallets")
+                .select("balance, currency")
+                .eq("user_id", user.id)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (!data) {
+                if (availableBalanceElement) {
+                    availableBalanceElement.textContent = "Unavailable";
+                }
                 return;
             }
 
-            const video = document.createElement("video");
+            const balance = Number(data.balance);
 
-            video.controls = true;
-            video.preload = "metadata";
-            video.playsInline = true;
-            video.src = videoURL;
-
-            card.appendChild(video);
-
-            // VIEWING PROGRESS DISPLAY
-
-            const timerBox = document.createElement("div");
-            timerBox.className = "watch-timer";
-            timerBox.style.marginTop = "14px";
-
-            const timerLabel = document.createElement("p");
-            timerLabel.textContent =
-                "Verified viewing time: 0 / " +
-                duration + " seconds";
-
-            const progress = document.createElement("progress");
-            progress.max = duration;
-            progress.value = 0;
-            progress.style.width = "100%";
-            progress.style.height = "14px";
-
-            const status = document.createElement("p");
-            status.textContent =
-                "Play the video to start a viewing session.";
-
-            timerBox.append(timerLabel, progress, status);
-            card.appendChild(timerBox);
-
-            // SESSION VARIABLES
-
-            let sessionId = null;
-            let startingSession = false;
-            let heartbeatTimer = null;
-            let heartbeatRunning = false;
-            let completed = false;
-            let verifiedSeconds = 0;
-
-            // STOP HEARTBEAT
-
-            function stopHeartbeat() {
-
-                if (heartbeatTimer !== null) {
-                    clearInterval(heartbeatTimer);
-                    heartbeatTimer = null;
-                }
+            if (!Number.isFinite(balance) || balance < 0) {
+                throw new Error("Invalid wallet balance.");
             }
 
-            // UPDATE DISPLAY
+            const currency = data.currency || "USD";
 
-            function updateProgress(seconds) {
-
-                verifiedSeconds = Math.min(
-                    duration,
-                    Math.max(0, Number(seconds) || 0)
-                );
-
-                timerLabel.textContent =
-                    "Verified viewing time: " +
-                    verifiedSeconds + " / " +
-                    duration + " seconds";
-
-                progress.value = verifiedSeconds;
+            if (availableBalanceElement) {
+                availableBalanceElement.textContent =
+                    formatMoney(balance, currency);
             }
 
-            // VERIFY COMPLETION
-
-            async function verifyCompletion() {
-
-                if (!sessionId || completed) {
-                    return;
-                }
-
-                stopHeartbeat();
-
-                try {
-
-                    const { data, error } = await db.rpc(
-                        "complete_ad_view_session",
-                        {
-                            p_session_id: sessionId
-                        }
-                    );
-
-                    if (error) throw error;
-
-                    if (data === true) {
-
-                        completed = true;
-
-                        status.textContent =
-                            "Viewing completed and verified by the server. No reward has been issued yet.";
-
-                    } else {
-
-                        status.textContent =
-                            "More verified viewing time is required. Continue watching.";
-
-                    }
-
-                } catch (error) {
-
-                    console.error(
-                        "Completion verification error:",
-                        error
-                    );
-
-                    status.textContent =
-                        "We could not verify completion. Please try again.";
-                }
+            if (totalEarningsElement) {
+                totalEarningsElement.textContent = "$0.00";
             }
 
-            // SEND PROGRESS TO SUPABASE
+        } catch (error) {
 
-            async function sendHeartbeat() {
+            console.error("Wallet loading error:", error);
 
-                if (
-                    !sessionId ||
-                    completed ||
-                    heartbeatRunning ||
-                    video.paused ||
-                    document.visibilityState !== "visible"
-                ) {
-                    return;
-                }
-
-                heartbeatRunning = true;
-
-                try {
-
-                    const { data, error } = await db.rpc(
-                        "record_ad_view_heartbeat",
-                        {
-                            p_session_id: sessionId,
-                            p_video_position: Number(video.currentTime)
-                        }
-                    );
-
-                    if (error) throw error;
-
-                    updateProgress(data);
-
-                    status.textContent =
-                        "Viewing progress recorded by the server.";
-
-                    if (verifiedSeconds >= duration) {
-                        await verifyCompletion();
-                    }
-
-                } catch (error) {
-
-                    console.error(
-                        "Viewing progress error:",
-                        error
-                    );
-
-                    status.textContent =
-                        "Progress could not be recorded. Check your connection.";
-
-                    stopHeartbeat();
-
-                } finally {
-
-                    heartbeatRunning = false;
-                }
+            if (availableBalanceElement) {
+                availableBalanceElement.textContent = "Unavailable";
             }
-
-            // START VIEWING SESSION
-
-            async function startViewingSession() {
-
-                if (sessionId || startingSession || completed) {
-                    return;
-                }
-
-                startingSession = true;
-
-                status.textContent =
-                    "Starting secure viewing session...";
-
-                try {
-
-                    const { data, error } = await db.rpc(
-                        "start_ad_view_session",
-                        {
-                            p_advertisement_id: ad.id
-                        }
-                    );
-
-                    if (error) throw error;
-
-                    sessionId = data;
-
-                    if (!sessionId) {
-                        throw new Error(
-                            "No viewing session was returned."
-                        );
-                    }
-
-                    status.textContent =
-                        "Secure viewing session started.";
-
-                    heartbeatTimer = setInterval(
-                        sendHeartbeat,
-                        5000
-                    );
-
-                } catch (error) {
-
-                    console.error(
-                        "Viewing session error:",
-                        error
-                    );
-
-                    status.textContent =
-                        "Could not start viewing session. Please refresh and try again.";
-
-                    video.pause();
-
-                } finally {
-
-                    startingSession = false;
-                }
-            }
-
-            // VIDEO PLAY EVENT
-
-            video.addEventListener("play", function () {
-
-                if (!sessionId && !startingSession && !completed) {
-                    startViewingSession();
-                }
-
-            });
-
-            // VIDEO PAUSE EVENT
-
-            video.addEventListener("pause", function () {
-
-                stopHeartbeat();
-
-                if (!completed && sessionId) {
-                    status.textContent =
-                        "Video paused. Your viewing session is saved.";
-                }
-
-            });
-
-            // FINAL PROGRESS
-
-            async function sendFinalProgress() {
-
-                if (!sessionId || completed) {
-                    return;
-                }
-
-                try {
-
-                    const { data, error } = await db.rpc(
-                        "record_ad_view_heartbeat",
-                        {
-                            p_session_id: sessionId,
-                            p_video_position: Number(video.currentTime)
-                        }
-                    );
-
-                    if (error) throw error;
-
-                    updateProgress(data);
-
-                } catch (error) {
-
-                    console.error(
-                        "Final viewing progress error:",
-                        error
-                    );
-                }
-            }
-
-            // VIDEO ENDED EVENT
-
-            video.addEventListener("ended", async function () {
-
-                stopHeartbeat();
-
-                await sendFinalProgress();
-
-                await verifyCompletion();
-
-            });
-
-            // PAGE VISIBILITY
-
-            document.addEventListener(
-                "visibilitychange",
-                function () {
-
-                    if (document.visibilityState !== "visible") {
-
-                        stopHeartbeat();
-
-                    } else if (
-                        !video.paused &&
-                        sessionId &&
-                        !completed
-                    ) {
-
-                        if (heartbeatTimer === null) {
-
-                            heartbeatTimer = setInterval(
-                                sendHeartbeat,
-                                5000
-                            );
-
-                        }
-                    }
-
-                }
-            );
-
-            advertisementList.appendChild(card);
-
-        });
-
-    } catch (error) {
-
-        console.error(
-            "Advertisement loading error:",
-            error
-        );
-
-        advertisementMessage.textContent =
-            "We could not load advertisements. Please refresh and try again.";
-
+        }
     }
-}
