@@ -3,7 +3,8 @@
 // COMPLETE AUTHENTICATION SYSTEM
 // ========================================
 
-// SUPABASE SETTINGS
+// SUPABASE CONFIGURATION
+
 const SUPABASE_URL = "https://zcadzmhldvfrqtewfuqs.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
@@ -14,11 +15,7 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p
 
 let db = null;
 
-try {
-    if (!window.supabase) {
-        throw new Error("Supabase library did not load.");
-    }
-
+if (window.supabase && window.supabase.createClient) {
     db = window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_PUBLISHABLE_KEY,
@@ -30,16 +27,15 @@ try {
             }
         }
     );
-
-} catch (error) {
-    console.error("Supabase initialisation error:", error);
+} else {
+    console.error("Supabase library not loaded.");
 }
 
 // ========================================
-// MAIN WEBSITE SYSTEM
+// MAIN WEBSITE
 // ========================================
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
 
     const registerForm = document.getElementById("registerForm");
     const loginForm = document.getElementById("loginForm");
@@ -49,10 +45,16 @@ document.addEventListener("DOMContentLoaded", function () {
     const dashboard = document.getElementById("userDashboard");
     const userEmail = document.getElementById("userEmail");
 
+    // Check required HTML elements
+
     if (!registerForm || !loginForm || !message || !dashboard) {
-        console.error("MG WATCH & EARN: Required HTML elements are missing.");
+        console.error("Missing required HTML elements.");
         return;
     }
+
+    // ========================================
+    // MESSAGE SYSTEM
+    // ========================================
 
     function showMessage(text, success = false) {
         message.textContent = text;
@@ -60,82 +62,93 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function explainError(error) {
-        console.error("MG WATCH & EARN error:", error);
+
+        console.error("MG WATCH & EARN:", error);
+
+        const text = error?.message || String(error);
+        const lower = text.toLowerCase();
 
         if (!navigator.onLine) {
-            return "Please check your internet connection.";
+            return "No internet connection. Please reconnect.";
         }
 
-        const errorText = error?.message || String(error);
-
-        if (errorText.toLowerCase().includes("failed to fetch")) {
-            return "Connection failed. Check your Supabase settings.";
+        if (lower.includes("failed to fetch")) {
+            return "Unable to connect. Check your internet and Supabase configuration.";
         }
 
-        return errorText;
+        if (lower.includes("invalid login credentials")) {
+            return "Incorrect email or password.";
+        }
+
+        if (lower.includes("already registered")) {
+            return "This email already has an account. Please log in.";
+        }
+
+        if (lower.includes("email not confirmed")) {
+            return "Please verify your email before logging in.";
+        }
+
+        if (lower.includes("password")) {
+            return text;
+        }
+
+        return text;
     }
 
-    function setFormLoading(form, loading) {
-        const buttons = form.querySelectorAll('button[type="submit"]');
+    // ========================================
+    // LOADING BUTTONS
+    // ========================================
 
-        buttons.forEach(function (button) {
-            button.disabled = loading;
-            button.textContent = loading
-                ? "Please wait..."
-                : button.dataset.originalText;
-        });
-    }
-
-    document.querySelectorAll('form button[type="submit"]').forEach(function (button) {
+    document.querySelectorAll('button[type="submit"]').forEach(button => {
         button.dataset.originalText = button.textContent;
     });
+
+    function setLoading(form, loading) {
+
+        const button = form.querySelector('button[type="submit"]');
+
+        if (!button) return;
+
+        button.disabled = loading;
+
+        button.textContent = loading
+            ? "Please wait..."
+            : button.dataset.originalText;
+    }
 
     // ========================================
     // DASHBOARD
     // ========================================
 
     function showDashboard(user) {
+
         dashboard.hidden = false;
+
         registerForm.hidden = true;
         loginForm.hidden = true;
 
         if (userEmail) {
-            userEmail.textContent = "Email: " + user.email;
+            userEmail.textContent = user.email || "";
         }
     }
 
     function showLoginForms() {
+
         dashboard.hidden = true;
+
         registerForm.hidden = false;
         loginForm.hidden = false;
     }
 
     // ========================================
-    // CHECK EXISTING SESSION
+    // SUPABASE CHECK
     // ========================================
 
-    async function checkSession() {
+    if (!db) {
 
-        if (!db) {
-            showMessage("Supabase configuration error.");
-            return;
-        }
+        showMessage("Connection error: Supabase did not load.");
 
-        try {
-            const { data, error } = await db.auth.getSession();
-
-            if (error) throw error;
-
-            if (data.session) {
-                showDashboard(data.session.user);
-            } else {
-                showLoginForms();
-            }
-
-        } catch (error) {
-            showLoginForms();
-            showMessage(explainError(error));
-        }
+        return;
     }
 
     // ========================================
@@ -146,53 +159,67 @@ document.addEventListener("DOMContentLoaded", function () {
 
         event.preventDefault();
 
-        const email = document.getElementById("registerEmail").value.trim();
-        const password = document.getElementById("registerPassword").value;
+        const email = document.getElementById("registerEmail")?.value.trim();
+
+        const password = document.getElementById("registerPassword")?.value;
 
         if (!email || !password) {
-            showMessage("Enter your email and password.");
+            showMessage("Please enter your email and password.");
             return;
         }
 
         if (password.length < 8) {
-            showMessage("Password must contain at least 8 characters.");
+            showMessage("Password must have at least 8 characters.");
             return;
         }
 
-        setFormLoading(registerForm, true);
-        showMessage("Creating your account...", true);
+        setLoading(registerForm, true);
+
+        showMessage("Creating your MG WATCH & EARN account...", true);
 
         try {
 
             const { data, error } = await db.auth.signUp({
-                email,
-                password,
+
+                email: email,
+
+                password: password,
+
                 options: {
-                    emailRedirectTo: window.location.origin +
-                        window.location.pathname
+                    emailRedirectTo: window.location.origin + window.location.pathname
                 }
+
             });
 
             if (error) throw error;
 
-            if (data.session) {
-                showMessage("Account created successfully!", true);
-                showDashboard(data.session.user);
-            } else {
-                showMessage(
-                    "Registration successful! Check your email for verification.",
-                    true
-                );
-            }
-
             registerForm.reset();
 
+            if (data.session) {
+
+                showDashboard(data.session.user);
+
+                showMessage("Welcome! Your account has been created.", true);
+
+            } else {
+
+                showMessage(
+                    "Registration successful! Please check your email to verify your account.",
+                    true
+                );
+
+            }
+
         } catch (error) {
+
             showMessage(explainError(error));
 
         } finally {
-            setFormLoading(registerForm, false);
+
+            setLoading(registerForm, false);
+
         }
+
     });
 
     // ========================================
@@ -203,38 +230,49 @@ document.addEventListener("DOMContentLoaded", function () {
 
         event.preventDefault();
 
-        const email = document.getElementById("loginEmail").value.trim();
-        const password = document.getElementById("loginPassword").value;
+        const email = document.getElementById("loginEmail")?.value.trim();
+
+        const password = document.getElementById("loginPassword")?.value;
 
         if (!email || !password) {
-            showMessage("Enter your email and password.");
+
+            showMessage("Please enter your email and password.");
+
             return;
         }
 
-        setFormLoading(loginForm, true);
-        showMessage("Logging in...", true);
+        setLoading(loginForm, true);
+
+        showMessage("Signing in...", true);
 
         try {
 
             const { data, error } = await db.auth.signInWithPassword({
-                email,
-                password
+
+                email: email,
+
+                password: password
+
             });
 
             if (error) throw error;
-
-            showMessage("Welcome to MG WATCH & EARN!", true);
 
             loginForm.reset();
 
             showDashboard(data.user);
 
+            showMessage("Successfully logged in. Welcome!", true);
+
         } catch (error) {
+
             showMessage(explainError(error));
 
         } finally {
-            setFormLoading(loginForm, false);
+
+            setLoading(loginForm, false);
+
         }
+
     });
 
     // ========================================
@@ -255,27 +293,68 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 showLoginForms();
 
-                showMessage("Successfully logged out.", true);
+                showMessage("You have successfully logged out.", true);
 
             } catch (error) {
+
                 showMessage(explainError(error));
 
             } finally {
+
                 logoutButton.disabled = false;
+
             }
+
         });
+
     }
 
     // ========================================
-    // AUTHENTICATION STATE
+    // EXISTING SESSION
     // ========================================
 
-    db.auth.onAuthStateChange(function (event, session) {
+    async function checkSession() {
+
+        try {
+
+            const { data, error } = await db.auth.getSession();
+
+            if (error) throw error;
+
+            if (data.session) {
+
+                showDashboard(data.session.user);
+
+            } else {
+
+                showLoginForms();
+
+            }
+
+        } catch (error) {
+
+            showLoginForms();
+
+            showMessage(explainError(error));
+
+        }
+
+    }
+
+    // ========================================
+    // AUTHENTICATION CHANGES
+    // ========================================
+
+    db.auth.onAuthStateChange((event, session) => {
 
         if (session) {
+
             showDashboard(session.user);
+
         } else if (event === "SIGNED_OUT") {
+
             showLoginForms();
+
         }
 
     });
@@ -284,18 +363,22 @@ document.addEventListener("DOMContentLoaded", function () {
     // INTERNET STATUS
     // ========================================
 
-    window.addEventListener("offline", function () {
+    window.addEventListener("offline", () => {
+
         showMessage("Internet connection lost.");
+
     });
 
-    window.addEventListener("online", function () {
+    window.addEventListener("online", () => {
+
         showMessage("Internet connection restored.", true);
+
     });
 
     // ========================================
     // START WEBSITE
     // ========================================
 
-    checkSession();
+    await checkSession();
 
 });
