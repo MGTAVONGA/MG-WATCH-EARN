@@ -7,7 +7,6 @@
     <title>MG WATCH & EARN</title>
 
     <meta name="description" content="Watch entertainment, discover sponsored content and earn eligible rewards.">
-
     <meta name="theme-color" content="#080d1a">
 
     <link rel="stylesheet" href="styles.css">
@@ -75,6 +74,32 @@
             margin: 12px 0;
             border-radius: 6px;
             border: none;
+            box-sizing: border-box;
+        }
+
+        .advertisement-card {
+            background: #102b48;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .advertisement-card h3 {
+            color: #00e5a0;
+        }
+
+        .advertisement-card video {
+            width: 100%;
+            max-width: 650px;
+            display: block;
+            margin-top: 15px;
+            border-radius: 8px;
+        }
+
+        #advertisementMessage {
+            padding: 12px;
+            margin: 12px 0;
+            color: #ddd;
         }
 
         [hidden] {
@@ -266,43 +291,27 @@
             <div class="dashboard-grid">
 
                 <div class="dashboard-card">
-
                     <h3>💰 Total Earnings</h3>
-
                     <p class="balance">$0.00</p>
-
-                    <small>Rewards not yet activated</small>
-
+                    <small>Verified rewards only</small>
                 </div>
 
                 <div class="dashboard-card">
-
                     <h3>💳 Available Balance</h3>
-
                     <p class="balance">$0.00</p>
-
-                    <small>Verified balance pending integration</small>
-
+                    <small>Verified balance</small>
                 </div>
 
                 <div class="dashboard-card">
-
                     <h3>▶️ Videos Watched</h3>
-
                     <p class="balance">0</p>
-
-                    <small>Activity tracking coming soon</small>
-
+                    <small>Activity tracking pending</small>
                 </div>
 
                 <div class="dashboard-card">
-
                     <h3>⭐ My Rewards</h3>
-
                     <p class="balance">$0.00</p>
-
                     <small>Eligible rewards pending activation</small>
-
                 </div>
 
             </div>
@@ -315,46 +324,42 @@
 
                 <div class="dashboard-links">
 
-                    <a href="#watch">
-                        ▶️ Watch & Earn
-                    </a>
-
-                    <a href="#movies">
-                        🎬 Movies
-                    </a>
-
-                    <a href="#rewards">
-                        ⭐ My Rewards
-                    </a>
-
-                    <a href="#referrals">
-                        👥 Referrals
-                    </a>
-
-                    <a href="#withdraw">
-                        💰 Withdraw Money
-                    </a>
-
-                    <a href="#transactions">
-                        📊 Transactions
-                    </a>
+                    <a href="#watch">▶️ Watch & Earn</a>
+                    <a href="#movies">🎬 Movies</a>
+                    <a href="#rewards">⭐ My Rewards</a>
+                    <a href="#referrals">👥 Referrals</a>
+                    <a href="#withdraw">💰 Withdraw Money</a>
+                    <a href="#transactions">📊 Transactions</a>
 
                 </div>
 
             </div>
 
-            <!-- WATCH SECTION -->
+            <!-- WATCH & EARN -->
 
             <div class="dashboard-card" id="watch">
 
                 <h2>▶️ WATCH & EARN</h2>
 
                 <p>
-                    Sponsored advertisements and eligible
-                    video opportunities will appear here.
+                    Discover sponsored advertisements and
+                    video opportunities available to members.
                 </p>
 
-                <p>Coming soon.</p>
+                <div id="advertisementMessage">
+                    Loading available advertisements...
+                </div>
+
+                <div id="advertisementList">
+
+                    <!-- Supabase advertisements appear here -->
+
+                </div>
+
+                <p style="font-size:13px; color:#aaa;">
+                    Rewards are subject to campaign eligibility,
+                    verification and available sponsor funding.
+                </p>
 
             </div>
 
@@ -409,8 +414,8 @@
 
                 <p>
                     Withdrawal requests will be available
-                    once the verified rewards and payment
-                    systems are activated.
+                    once verified rewards and payment systems
+                    are activated.
                 </p>
 
             </div>
@@ -436,6 +441,8 @@
     </div>
 
 </section>
+
+<!-- FOOTER -->
 
 <footer>
 
