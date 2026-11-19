@@ -1,6 +1,7 @@
 // ========================================
 // MG WATCH & EARN
 // COMPLETE WEBSITE + ADMIN MANAGEMENT
+// DUPLICATE ADMIN PANEL FIX
 // ========================================
 
 // ========================================
@@ -14,6 +15,9 @@ const SUPABASE_PUBLISHABLE_KEY =
     "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
 
 let db = null;
+
+// Prevent simultaneous admin panel creation
+let adminAccessCheckInProgress = false;
 
 try {
     if (!window.supabase) {
@@ -297,7 +301,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     // ========================================
     // USER ADVERTISEMENTS
-    // SECURE VIEWING SESSION INTEGRATION
     // ========================================
 
     async function loadAdvertisements() {
@@ -400,8 +403,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     return;
                 }
 
-                // VIDEO PLAYER
-
                 const video = createElement(
                     "video",
                     undefined,
@@ -414,8 +415,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 video.style.width = "100%";
                 video.style.display = "none";
                 video.src = videoURL;
-
-                // START BUTTON
 
                 const startButton = createElement(
                     "button",
@@ -435,8 +434,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     "cursor:pointer",
                     "margin:10px 0"
                 ].join(";");
-
-                // PROGRESS
 
                 const timerLabel = createElement(
                     "p",
@@ -460,8 +457,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     card
                 );
 
-                // RETRY BUTTON
-
                 const retryButton = createElement(
                     "button",
                     "RETRY COMPLETION",
@@ -480,8 +475,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 video.playbackRate = 1;
 
-                // UPDATE PROGRESS
-
                 function updateProgress() {
 
                     timerLabel.textContent =
@@ -497,8 +490,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     );
                 }
 
-                // STOP TIMER
-
                 function stopTimer() {
 
                     if (timer !== null) {
@@ -506,8 +497,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                         timer = null;
                     }
                 }
-
-                // FINISH VIEWING
 
                 async function finishViewing() {
 
@@ -620,8 +609,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     finishViewing
                 );
 
-                // WATCHING TIMER
-
                 function startTimer() {
 
                     if (timer !== null || completed) return;
@@ -692,8 +679,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     }
                 });
 
-                // REPLAY WHEN VIDEO ENDS TOO EARLY
-
                 video.addEventListener("ended", () => {
 
                     stopTimer();
@@ -715,8 +700,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     }
                 });
 
-                // PREVENT SEEKING
-
                 video.addEventListener("seeking", () => {
 
                     if (
@@ -732,16 +715,12 @@ document.addEventListener("DOMContentLoaded", async function () {
                     }
                 });
 
-                // PREVENT SPEED CHANGES
-
                 video.addEventListener("ratechange", () => {
 
                     if (video.playbackRate !== 1) {
                         video.playbackRate = 1;
                     }
                 });
-
-                // START ADVERTISEMENT
 
                 startButton.addEventListener(
                     "click",
@@ -1104,8 +1083,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 buttonArea.style.cssText =
                     "display:flex;gap:10px;flex-wrap:wrap;";
 
-                // ACTIVATE / PAUSE
-
                 const statusButton = createElement(
                     "button",
                     ad.status === "active"
@@ -1160,8 +1137,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                         }
                     }
                 );
-
-                // DELETE
 
                 const deleteButton = createElement(
                     "button",
@@ -1342,27 +1317,54 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     // ========================================
     // ADMIN DASHBOARD
+    // DUPLICATE CREATION PROTECTION
     // ========================================
 
     async function checkAdminAccess(user) {
 
-        const existingPanels =
-            document.querySelectorAll("#mgAdminPanel");
+        // If another admin check is already running,
+        // do not create another dashboard.
 
-        let panel = existingPanels[0] || null;
+        if (adminAccessCheckInProgress) {
 
-        existingPanels.forEach((item, index) => {
-            if (index > 0) item.remove();
-        });
+            const existing =
+                document.querySelector("#mgAdminPanel");
+
+            return !!existing;
+        }
 
         if (!user || !user.id) {
+
+            const panel =
+                document.querySelector("#mgAdminPanel");
 
             if (panel) panel.hidden = true;
 
             return false;
         }
 
+        adminAccessCheckInProgress = true;
+
+        let panel = null;
+
         try {
+
+            // Remove any accidental duplicate panels.
+
+            const existingPanels =
+                document.querySelectorAll("#mgAdminPanel");
+
+            panel = existingPanels[0] || null;
+
+            existingPanels.forEach((item, index) => {
+
+                if (index > 0) {
+                    item.remove();
+                }
+
+            });
+
+            // Verify administrator access.
 
             const { data, error } =
                 await db.rpc("is_admin");
@@ -1371,10 +1373,14 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             if (data !== true) {
 
-                if (panel) panel.hidden = true;
+                if (panel) {
+                    panel.hidden = true;
+                }
 
                 return false;
             }
+
+            // Create panel only if one does not exist.
 
             if (!panel) {
 
@@ -1637,7 +1643,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                     "color:#ffcf70;font-size:13px;";
             }
 
+            // Display the single admin panel.
+
             panel.hidden = false;
+
+            // Load admin information.
 
             await Promise.all([
                 loadAdminUsers(panel),
@@ -1653,9 +1663,17 @@ document.addEventListener("DOMContentLoaded", async function () {
                 error
             );
 
-            if (panel) panel.hidden = true;
+            if (panel) {
+                panel.hidden = true;
+            }
 
             return false;
+
+        } finally {
+
+            // Allow future refreshes and checks.
+
+            adminAccessCheckInProgress = false;
         }
     }
 
