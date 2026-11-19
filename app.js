@@ -1,19 +1,13 @@
 // ========================================
 // MG WATCH & EARN
-// COMPLETE WEBSITE JAVASCRIPT
+// COMPLETE WEBSITE + ADMIN USER MANAGEMENT
 // ========================================
-
-// SUPABASE CONFIGURATION
 
 const SUPABASE_URL =
     "https://zcadzmhldvfrqtewfuqs.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
     "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
-
-// ========================================
-// INITIALISE SUPABASE
-// ========================================
 
 let db = null;
 
@@ -33,75 +27,44 @@ try {
             }
         }
     );
-
 } catch (error) {
-    console.error("Supabase initialisation error:", error);
+    console.error("Supabase initialisation:", error);
 }
-
-// ========================================
-// MAIN WEBSITE
-// ========================================
 
 document.addEventListener("DOMContentLoaded", async function () {
 
-    const registerForm =
-        document.getElementById("registerForm");
+    const registerForm = document.getElementById("registerForm");
+    const loginForm = document.getElementById("loginForm");
+    const logoutButton = document.getElementById("logoutButton");
+    const message = document.getElementById("authMessage");
+    const dashboard = document.getElementById("userDashboard");
+    const userEmail = document.getElementById("userEmail");
+    const advertisementList = document.getElementById("advertisementList");
+    const advertisementMessage = document.getElementById("advertisementMessage");
 
-    const loginForm =
-        document.getElementById("loginForm");
+    if (!registerForm || !loginForm || !dashboard || !message) {
+        console.error("Required website HTML elements are missing.");
+        return;
+    }
 
-    const logoutButton =
-        document.getElementById("logoutButton");
-
-    const message =
-        document.getElementById("authMessage");
-
-    const dashboard =
-        document.getElementById("userDashboard");
-
-    const userEmail =
-        document.getElementById("userEmail");
-
-    const advertisementList =
-        document.getElementById("advertisementList");
-
-    const advertisementMessage =
-        document.getElementById("advertisementMessage");
-
-    // Check required HTML elements.
-
-    if (
-        !registerForm ||
-        !loginForm ||
-        !message ||
-        !dashboard
-    ) {
-        console.error(
-            "MG WATCH & EARN: Required HTML elements are missing."
-        );
+    if (!db) {
+        message.textContent = "Supabase could not connect. Please refresh.";
         return;
     }
 
     // ========================================
-    // MESSAGE SYSTEM
+    // MESSAGES
     // ========================================
 
     function showMessage(text, success = false) {
-
         message.textContent = text;
-
-        message.style.color = success
-            ? "#00e5a0"
-            : "#ff7777";
+        message.style.color = success ? "#00e5a0" : "#ff7777";
     }
 
     function explainError(error) {
+        console.error(error);
 
-        console.error("MG WATCH & EARN:", error);
-
-        const text =
-            error?.message || String(error);
-
+        const text = error?.message || String(error);
         const lower = text.toLowerCase();
 
         if (!navigator.onLine) {
@@ -109,52 +72,29 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
 
         if (lower.includes("failed to fetch")) {
-            return "Connection failed. Please check your internet and Supabase.";
+            return "Connection failed. Please check your internet.";
         }
 
         if (lower.includes("invalid login credentials")) {
             return "Incorrect email or password.";
         }
 
-        if (lower.includes("already registered")) {
-            return "This email is already registered. Please log in.";
-        }
-
         if (lower.includes("email not confirmed")) {
             return "Please verify your email before logging in.";
-        }
-
-        if (
-            lower.includes("permission denied") ||
-            lower.includes("row-level security")
-        ) {
-            return "Database permission error. Please contact support.";
         }
 
         return text;
     }
 
-    // ========================================
-    // LOADING BUTTONS
-    // ========================================
-
-    document
-        .querySelectorAll('button[type="submit"]')
-        .forEach(button => {
-
-            button.dataset.originalText =
-                button.textContent;
-        });
-
     function setLoading(form, loading) {
-
-        const button =
-            form.querySelector('button[type="submit"]');
-
+        const button = form.querySelector('button[type="submit"]');
         if (!button) return;
 
-        button.disabled = loading;
+        if (!button.dataset.originalText) {
+            button.dataset.originalText = button.textContent;
+        }
 
+        button.disabled = loading;
         button.textContent = loading
             ? "Please wait..."
             : button.dataset.originalText;
@@ -164,91 +104,65 @@ document.addEventListener("DOMContentLoaded", async function () {
     // DASHBOARD ELEMENTS
     // ========================================
 
-    const dashboardCards =
-        dashboard.querySelectorAll(
-            ".dashboard-grid .dashboard-card"
-        );
+    const cards = dashboard.querySelectorAll(
+        ".dashboard-grid .dashboard-card"
+    );
 
     const totalEarningsElement =
-        dashboardCards[0]?.querySelector(".balance");
+        cards[0]?.querySelector(".balance");
 
     const availableBalanceElement =
-        dashboardCards[1]?.querySelector(".balance");
+        cards[1]?.querySelector(".balance");
 
     const videosWatchedElement =
-        dashboardCards[2]?.querySelector(".balance");
+        cards[2]?.querySelector(".balance");
 
     const rewardsElement =
-        dashboardCards[3]?.querySelector(".balance");
-
-    // ========================================
-    // MONEY FORMAT
-    // ========================================
+        cards[3]?.querySelector(".balance");
 
     function formatMoney(amount, currency = "USD") {
-
         const value = Number(amount);
 
-        if (!Number.isFinite(value)) {
-            return "$0.00";
-        }
+        if (!Number.isFinite(value)) return "$0.00";
 
         try {
-
             return new Intl.NumberFormat("en-US", {
                 style: "currency",
-                currency: currency
+                currency
             }).format(value);
-
         } catch {
-
             return "$" + value.toFixed(2);
         }
     }
 
     // ========================================
-    // SHOW LOGIN AND REGISTRATION
+    // LOGIN AND DASHBOARD DISPLAY
     // ========================================
 
     function showLoginForms() {
-
         dashboard.hidden = true;
-
-        const adminPanel =
-            document.getElementById("mgAdminPanel");
-
-        if (adminPanel) {
-            adminPanel.hidden = true;
-        }
-
         registerForm.hidden = false;
         loginForm.hidden = false;
+
+        const panel = document.getElementById("mgAdminPanel");
+        if (panel) panel.hidden = true;
     }
 
-    // ========================================
-    // SHOW USER DASHBOARD
-    // ========================================
-
     function showDashboard(user) {
-
         dashboard.hidden = false;
-
         registerForm.hidden = true;
         loginForm.hidden = true;
 
         if (userEmail) {
-            userEmail.textContent =
-                "Email: " + (user.email || "");
+            userEmail.textContent = "Email: " + (user.email || "");
         }
 
         if (totalEarningsElement) {
-            totalEarningsElement.textContent =
-                "$0.00";
+            totalEarningsElement.textContent = "$0.00";
         }
 
         if (availableBalanceElement) {
-            availableBalanceElement.textContent =
-                "Loading...";
+            availableBalanceElement.textContent = "Loading...";
         }
 
         if (videosWatchedElement) {
@@ -261,15 +175,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // ========================================
-    // LOAD USER WALLET
+    // USER WALLET
     // ========================================
 
     async function loadWallet(user) {
-
-        if (!user || !user.id) return;
-
         try {
-
             const { data, error } = await db
                 .from("user_wallets")
                 .select("balance, currency")
@@ -279,393 +189,207 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (error) throw error;
 
             if (!data) {
-
                 if (availableBalanceElement) {
-                    availableBalanceElement.textContent =
-                        "Unavailable";
+                    availableBalanceElement.textContent = "Unavailable";
                 }
-
                 return;
             }
 
             const balance = Number(data.balance);
 
-            if (
-                !Number.isFinite(balance) ||
-                balance < 0
-            ) {
+            if (!Number.isFinite(balance) || balance < 0) {
                 throw new Error("Invalid wallet balance.");
             }
 
-            const currency = data.currency || "USD";
-
             if (availableBalanceElement) {
                 availableBalanceElement.textContent =
-                    formatMoney(balance, currency);
-            }
-
-            if (totalEarningsElement) {
-                totalEarningsElement.textContent =
-                    "$0.00";
+                    formatMoney(balance, data.currency || "USD");
             }
 
         } catch (error) {
-
-            console.error("Wallet loading error:", error);
+            console.error("Wallet error:", error);
 
             if (availableBalanceElement) {
-                availableBalanceElement.textContent =
-                    "Unavailable";
+                availableBalanceElement.textContent = "Unavailable";
             }
         }
     }
 
     // ========================================
-    // VALIDATE VIDEO URL
+    // ADVERTISEMENTS
     // ========================================
 
     function safeVideoURL(value) {
-
         if (!value) return null;
 
         try {
-
             const url = new URL(value);
-
-            if (url.protocol !== "https:") {
-                return null;
-            }
-
-            return url.href;
-
+            return url.protocol === "https:" ? url.href : null;
         } catch {
-
             return null;
         }
     }
 
-    // ========================================
-    // LOAD ACTIVE ADVERTISEMENTS
-    // ========================================
-
-    let advertisementsLoading = false;
-
     async function loadAdvertisements() {
-
-        if (
-            !advertisementList ||
-            !advertisementMessage
-        ) {
-            return;
-        }
-
-        if (advertisementsLoading) {
-            return;
-        }
-
-        advertisementsLoading = true;
+        if (!advertisementList || !advertisementMessage) return;
 
         advertisementList.replaceChildren();
-
-        advertisementMessage.textContent =
-            "Loading available advertisements...";
+        advertisementMessage.textContent = "Loading advertisements...";
 
         try {
-
             const { data, error } = await db
                 .from("advertisements")
-                .select(
-                    "id, title, description, video_url, advertiser_name, duration_seconds"
-                )
+                .select("id,title,description,video_url,advertiser_name,duration_seconds")
                 .eq("status", "active")
-                .order("created_at", {
-                    ascending: false
-                });
+                .order("created_at", { ascending: false });
 
             if (error) throw error;
 
             if (!data || data.length === 0) {
-
                 advertisementMessage.textContent =
                     "No sponsored advertisements are available right now. Please check again later.";
-
                 return;
             }
 
-            // Remove duplicate advertisements.
-
-            const uniqueAdvertisements = [
-                ...new Map(
-                    data.map(ad => [ad.id, ad])
-                ).values()
+            const uniqueAds = [
+                ...new Map(data.map(ad => [ad.id, ad])).values()
             ];
 
             advertisementMessage.textContent =
-                uniqueAdvertisements.length +
-                " sponsored campaign(s) available.";
+                uniqueAds.length + " sponsored campaign(s) available.";
 
-            uniqueAdvertisements.forEach(ad => {
+            uniqueAds.forEach(ad => {
+                const card = document.createElement("div");
+                card.className = "advertisement-card";
 
-                const card =
-                    document.createElement("div");
-
-                card.className =
-                    "advertisement-card";
-
-                const title =
-                    document.createElement("h3");
-
-                title.textContent =
-                    ad.title || "Sponsored advertisement";
-
+                const title = document.createElement("h3");
+                title.textContent = ad.title || "Sponsored advertisement";
                 card.appendChild(title);
 
-                if (ad.advertiser_name) {
+                const advertiser = document.createElement("p");
+                advertiser.textContent =
+                    "Sponsored by: " + (ad.advertiser_name || "Advertiser");
+                card.appendChild(advertiser);
 
-                    const advertiser =
-                        document.createElement("p");
-
-                    advertiser.textContent =
-                        "Sponsored by: " +
-                        ad.advertiser_name;
-
-                    card.appendChild(advertiser);
-                }
-
-                const description =
-                    document.createElement("p");
-
-                description.textContent =
-                    ad.description ||
-                    "Discover this sponsored campaign.";
-
+                const description = document.createElement("p");
+                description.textContent = ad.description || "";
                 card.appendChild(description);
 
-                const requiredSeconds = Math.max(
+                const durationSeconds = Math.max(
                     1,
-                    Math.floor(
-                        Number(ad.duration_seconds) || 15
-                    )
+                    Math.floor(Number(ad.duration_seconds) || 15)
                 );
 
-                const duration =
-                    document.createElement("p");
-
+                const duration = document.createElement("p");
                 duration.textContent =
-                    "Video duration: " +
-                    requiredSeconds +
-                    " seconds";
-
+                    "Video duration: " + durationSeconds + " seconds";
                 card.appendChild(duration);
 
-                const videoURL =
-                    safeVideoURL(ad.video_url);
+                const videoURL = safeVideoURL(ad.video_url);
 
                 if (videoURL) {
-
-                    const video =
-                        document.createElement("video");
-
+                    const video = document.createElement("video");
                     video.controls = true;
                     video.preload = "metadata";
                     video.playsInline = true;
                     video.src = videoURL;
-
                     video.style.width = "100%";
-
                     card.appendChild(video);
 
-                    // DEMONSTRATION TIMER ONLY.
-                    // This timer does not award money.
-
-                    const timerBox =
-                        document.createElement("div");
-
-                    timerBox.className = "watch-timer";
-                    timerBox.style.marginTop = "14px";
-
-                    const timerLabel =
-                        document.createElement("p");
-
+                    const timerLabel = document.createElement("p");
                     timerLabel.textContent =
-                        "Time watched: 0 / " +
-                        requiredSeconds +
-                        " seconds";
+                        "Time watched: 0 / " + durationSeconds + " seconds";
 
-                    const progress =
-                        document.createElement("progress");
-
-                    progress.max = requiredSeconds;
+                    const progress = document.createElement("progress");
+                    progress.max = durationSeconds;
                     progress.value = 0;
                     progress.style.width = "100%";
-                    progress.style.height = "14px";
 
-                    const status =
-                        document.createElement("p");
+                    const status = document.createElement("p");
+                    status.textContent = "Play the video to start the timer.";
 
-                    status.textContent =
-                        "Play the video to start the timer.";
+                    card.append(timerLabel, progress, status);
 
-                    timerBox.append(
-                        timerLabel,
-                        progress,
-                        status
-                    );
-
-                    card.appendChild(timerBox);
-
-                    let watchedSeconds = 0;
-                    let timerInterval = null;
-                    let lastVideoTime = 0;
+                    let watched = 0;
+                    let interval = null;
+                    let lastTime = 0;
                     let completed = false;
 
-                    function stopWatchTimer() {
+                    video.addEventListener("play", () => {
+                        if (completed || interval !== null) return;
 
-                        if (timerInterval !== null) {
+                        lastTime = video.currentTime;
 
-                            clearInterval(timerInterval);
+                        status.textContent =
+                            "Demonstration timer running.";
 
-                            timerInterval = null;
-                        }
-                    }
-
-                    function updateWatchDisplay() {
-
-                        timerLabel.textContent =
-                            "Time watched: " +
-                            watchedSeconds +
-                            " / " +
-                            requiredSeconds +
-                            " seconds";
-
-                        progress.value = watchedSeconds;
-                    }
-
-                    video.addEventListener(
-                        "play",
-                        function () {
-
+                        interval = setInterval(() => {
                             if (
-                                completed ||
-                                timerInterval !== null
-                            ) {
-                                return;
+                                document.visibilityState !== "visible" ||
+                                video.paused ||
+                                video.ended
+                            ) return;
+
+                            const current = video.currentTime;
+                            const advanced =
+                                current > lastTime + 0.1 &&
+                                current - lastTime < 2;
+
+                            lastTime = current;
+
+                            if (advanced) {
+                                watched = Math.min(
+                                    durationSeconds,
+                                    watched + 1
+                                );
+
+                                timerLabel.textContent =
+                                    "Time watched: " + watched +
+                                    " / " + durationSeconds + " seconds";
+
+                                progress.value = watched;
                             }
 
-                            lastVideoTime =
-                                video.currentTime;
-
-                            status.textContent =
-                                "Timer running while the video plays.";
-
-                            timerInterval = setInterval(
-                                function () {
-
-                                    if (
-                                        document.visibilityState !== "visible" ||
-                                        video.paused ||
-                                        video.ended
-                                    ) {
-                                        return;
-                                    }
-
-                                    const currentTime =
-                                        video.currentTime;
-
-                                    const mediaAdvanced =
-                                        currentTime >
-                                            lastVideoTime + 0.1 &&
-                                        currentTime -
-                                            lastVideoTime < 2;
-
-                                    lastVideoTime =
-                                        currentTime;
-
-                                    if (mediaAdvanced) {
-
-                                        watchedSeconds = Math.min(
-                                            requiredSeconds,
-                                            watchedSeconds + 1
-                                        );
-
-                                        updateWatchDisplay();
-                                    }
-
-                                    if (
-                                        watchedSeconds >=
-                                        requiredSeconds
-                                    ) {
-
-                                        completed = true;
-
-                                        stopWatchTimer();
-
-                                        video.pause();
-
-                                        status.textContent =
-                                            "Demonstration viewing complete. No reward has been issued.";
-                                    }
-
-                                },
-                                1000
-                            );
-                        }
-                    );
-
-                    video.addEventListener(
-                        "pause",
-                        function () {
-
-                            stopWatchTimer();
-
-                            if (!completed) {
+                            if (watched >= durationSeconds) {
+                                completed = true;
+                                clearInterval(interval);
+                                interval = null;
+                                video.pause();
 
                                 status.textContent =
-                                    "Timer paused. Play the video to continue.";
+                                    "Demonstration complete. No reward has been issued.";
                             }
+                        }, 1000);
+                    });
+
+                    function stopTimer() {
+                        if (interval !== null) {
+                            clearInterval(interval);
+                            interval = null;
                         }
-                    );
+                    }
 
-                    video.addEventListener(
-                        "ended",
-                        function () {
+                    video.addEventListener("pause", () => {
+                        stopTimer();
 
-                            stopWatchTimer();
-
-                            if (!completed) {
-
-                                status.textContent =
-                                    "Video ended. Replay it to continue the demonstration timer.";
-                            }
+                        if (!completed) {
+                            status.textContent = "Timer paused.";
                         }
-                    );
+                    });
 
-                    video.addEventListener(
-                        "seeking",
-                        function () {
+                    video.addEventListener("ended", stopTimer);
 
-                            lastVideoTime =
-                                video.currentTime;
-                        }
-                    );
+                    video.addEventListener("seeking", () => {
+                        lastTime = video.currentTime;
+                    });
 
-                    video.addEventListener(
-                        "seeked",
-                        function () {
-
-                            lastVideoTime =
-                                video.currentTime;
-                        }
-                    );
+                    video.addEventListener("seeked", () => {
+                        lastTime = video.currentTime;
+                    });
 
                 } else if (ad.video_url) {
-
-                    const warning =
-                        document.createElement("p");
-
-                    warning.textContent =
-                        "This video link cannot currently be displayed.";
-
+                    const warning = document.createElement("p");
+                    warning.textContent = "This video link cannot be displayed.";
                     card.appendChild(warning);
                 }
 
@@ -673,71 +397,148 @@ document.addEventListener("DOMContentLoaded", async function () {
             });
 
         } catch (error) {
-
-            console.error(
-                "Advertisement loading error:",
-                error
-            );
+            console.error("Advertisement error:", error);
 
             advertisementMessage.textContent =
-                "We could not load advertisements. Please refresh and try again.";
-
-        } finally {
-
-            advertisementsLoading = false;
+                "Could not load advertisements. Please try again.";
         }
     }
 
     // ========================================
-    // MG ADMINISTRATOR DASHBOARD
+    // ADMIN USER MANAGEMENT
+    // ========================================
+
+    async function loadAdminUsers(panel) {
+        const list = panel.querySelector("#mgAdminUsersList");
+        const count = panel.querySelector("#mgAdminUserCount");
+        const refresh = panel.querySelector("#mgRefreshUsers");
+
+        if (!list || !count || !refresh) return;
+
+        refresh.disabled = true;
+        refresh.textContent = "Loading...";
+
+        list.replaceChildren();
+
+        const loading = document.createElement("p");
+        loading.textContent = "Loading registered users...";
+        list.appendChild(loading);
+
+        try {
+            const { data, error } = await db.rpc("admin_get_users");
+
+            if (error) throw error;
+
+            list.replaceChildren();
+
+            const users = data || [];
+
+            count.textContent =
+                "TOTAL REGISTERED USERS: " + users.length;
+
+            if (users.length === 0) {
+                const empty = document.createElement("p");
+                empty.textContent = "No registered users found.";
+                list.appendChild(empty);
+                return;
+            }
+
+            const table = document.createElement("table");
+
+            table.style.cssText =
+                "width:100%;border-collapse:collapse;color:white;";
+
+            const thead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+
+            ["Email", "Registration date", "Last sign-in"].forEach(label => {
+                const th = document.createElement("th");
+                th.textContent = label;
+                th.style.cssText =
+                    "padding:10px;text-align:left;border-bottom:1px solid #00e5a0;";
+                headerRow.appendChild(th);
+            });
+
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement("tbody");
+
+            users.forEach(user => {
+                const row = document.createElement("tr");
+
+                const emailCell = document.createElement("td");
+                emailCell.textContent = user.email || "No email";
+                emailCell.style.padding = "10px";
+
+                const createdCell = document.createElement("td");
+                createdCell.textContent = user.created_at
+                    ? new Date(user.created_at).toLocaleDateString()
+                    : "Unknown";
+                createdCell.style.padding = "10px";
+
+                const lastCell = document.createElement("td");
+                lastCell.textContent = user.last_sign_in_at
+                    ? new Date(user.last_sign_in_at).toLocaleString()
+                    : "Never";
+                lastCell.style.padding = "10px";
+
+                row.append(emailCell, createdCell, lastCell);
+                tbody.appendChild(row);
+            });
+
+            table.appendChild(tbody);
+
+            const wrapper = document.createElement("div");
+            wrapper.style.overflowX = "auto";
+            wrapper.appendChild(table);
+
+            list.appendChild(wrapper);
+
+        } catch (error) {
+            console.error("Admin user loading error:", error);
+
+            list.replaceChildren();
+
+            const errorText = document.createElement("p");
+            errorText.textContent =
+                "Could not load users: " + (error.message || "Unknown error");
+
+            list.appendChild(errorText);
+
+        } finally {
+            refresh.disabled = false;
+            refresh.textContent = "REFRESH USER LIST";
+        }
+    }
+
+    // ========================================
+    // ADMIN DASHBOARD
     // ========================================
 
     async function checkAdminAccess(user) {
-
-        const existingPanel =
-            document.getElementById("mgAdminPanel");
+        const existing = document.getElementById("mgAdminPanel");
 
         if (!user || !user.id) {
-
-            if (existingPanel) {
-                existingPanel.hidden = true;
-            }
-
+            if (existing) existing.hidden = true;
             return false;
         }
 
         try {
-
-            // Check administrator access using
-            // the signed-in Supabase session.
-
-            const { data, error } =
-                await db.rpc("is_admin");
+            const { data, error } = await db.rpc("is_admin");
 
             if (error) throw error;
 
             if (data !== true) {
-
-                if (existingPanel) {
-                    existingPanel.hidden = true;
-                }
-
+                if (existing) existing.hidden = true;
                 return false;
             }
 
-            let panel = existingPanel;
+            let panel = existing;
 
             if (!panel) {
-
-                panel =
-                    document.createElement("section");
-
+                panel = document.createElement("section");
                 panel.id = "mgAdminPanel";
-
-                panel.setAttribute(
-                    "aria-labelledby",
-                    "mgAdminTitle"
-                );
 
                 panel.style.cssText = [
                     "background:#101d35",
@@ -748,66 +549,46 @@ document.addEventListener("DOMContentLoaded", async function () {
                     "color:#ffffff"
                 ].join(";");
 
-                const heading =
-                    document.createElement("h2");
+                const heading = document.createElement("h2");
+                heading.textContent = "MG ADMIN DASHBOARD";
 
-                heading.id = "mgAdminTitle";
+                const status = document.createElement("p");
+                status.textContent = "ADMIN STATUS: ACTIVE";
+                status.style.color = "#00e5a0";
 
-                heading.textContent =
-                    "MG ADMIN DASHBOARD";
+                const count = document.createElement("h3");
+                count.id = "mgAdminUserCount";
+                count.textContent = "TOTAL REGISTERED USERS: Loading...";
 
-                const verified =
-                    document.createElement("p");
+                const refresh = document.createElement("button");
+                refresh.id = "mgRefreshUsers";
+                refresh.type = "button";
+                refresh.textContent = "REFRESH USER LIST";
+                refresh.style.cssText =
+                    "background:#00e5a0;color:#071321;padding:12px 18px;border:0;border-radius:6px;cursor:pointer;font-weight:bold;";
 
-                verified.textContent =
-                    "Administrator access verified.";
+                const list = document.createElement("div");
+                list.id = "mgAdminUsersList";
+                list.style.marginTop = "18px";
 
-                const welcome =
-                    document.createElement("p");
-
-                welcome.textContent =
-                    "Welcome, MG Administrator.";
-
-                const status =
-                    document.createElement("p");
-
-                status.textContent =
-                    "ADMIN STATUS: ACTIVE";
-
-                status.style.cssText =
-                    "color:#00e5a0;font-weight:700;";
-
-                const note =
-                    document.createElement("p");
-
-                note.textContent =
-                    "Your administrator account is active. User management, campaign controls and wallet administration will be connected in the next stage.";
-
-                panel.append(
-                    heading,
-                    verified,
-                    welcome,
-                    status,
-                    note
-                );
-
+                panel.append(heading, status, count, refresh, list);
                 dashboard.appendChild(panel);
+
+                refresh.addEventListener("click", () => {
+                    loadAdminUsers(panel);
+                });
             }
 
             panel.hidden = false;
 
+            await loadAdminUsers(panel);
+
             return true;
 
         } catch (error) {
+            console.error("Admin verification error:", error);
 
-            console.error(
-                "Administrator verification failed:",
-                error
-            );
-
-            if (existingPanel) {
-                existingPanel.hidden = true;
-            }
+            if (existing) existing.hidden = true;
 
             return false;
         }
@@ -818,10 +599,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     async function loadUserAccount(user) {
-
-        if (!user || !user.id) {
-            return;
-        }
+        if (!user || !user.id) return;
 
         showDashboard(user);
 
@@ -833,335 +611,192 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // ========================================
-    // CHECK SUPABASE CONNECTION
-    // ========================================
-
-    if (!db) {
-
-        showMessage(
-            "Supabase connection failed. Refresh the website."
-        );
-
-        return;
-    }
-
-    // ========================================
     // REGISTRATION
     // ========================================
 
-    registerForm.addEventListener(
-        "submit",
-        async function (event) {
+    registerForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
 
-            event.preventDefault();
+        const email = document.getElementById("registerEmail")?.value.trim();
+        const password = document.getElementById("registerPassword")?.value;
 
-            const email = document
-                .getElementById("registerEmail")
-                ?.value.trim();
-
-            const password = document
-                .getElementById("registerPassword")
-                ?.value;
-
-            if (!email || !password) {
-
-                showMessage(
-                    "Please enter your email and password."
-                );
-
-                return;
-            }
-
-            if (password.length < 8) {
-
-                showMessage(
-                    "Password must contain at least 8 characters."
-                );
-
-                return;
-            }
-
-            setLoading(registerForm, true);
-
-            showMessage(
-                "Creating your account...",
-                true
-            );
-
-            try {
-
-                const { data, error } =
-                    await db.auth.signUp({
-
-                        email,
-                        password,
-
-                        options: {
-                            emailRedirectTo:
-                                window.location.origin +
-                                window.location.pathname
-                        }
-                    });
-
-                if (error) throw error;
-
-                registerForm.reset();
-
-                if (data.session) {
-
-                    await loadUserAccount(data.user);
-
-                    showMessage(
-                        "Your account was created successfully!",
-                        true
-                    );
-
-                } else {
-
-                    showMessage(
-                        "Registration successful! Please verify your email.",
-                        true
-                    );
-                }
-
-            } catch (error) {
-
-                showMessage(
-                    explainError(error)
-                );
-
-            } finally {
-
-                setLoading(registerForm, false);
-            }
+        if (!email || !password) {
+            showMessage("Please enter your email and password.");
+            return;
         }
-    );
+
+        if (password.length < 8) {
+            showMessage("Password must contain at least 8 characters.");
+            return;
+        }
+
+        setLoading(registerForm, true);
+        showMessage("Creating your account...", true);
+
+        try {
+            const { data, error } = await db.auth.signUp({
+                email,
+                password,
+                options: {
+                    emailRedirectTo:
+                        window.location.origin + window.location.pathname
+                }
+            });
+
+            if (error) throw error;
+
+            registerForm.reset();
+
+            if (data.session) {
+                await loadUserAccount(data.user);
+                showMessage("Your account was created successfully!", true);
+            } else {
+                showMessage(
+                    "Registration successful! Please verify your email.",
+                    true
+                );
+            }
+
+        } catch (error) {
+            showMessage(explainError(error));
+        } finally {
+            setLoading(registerForm, false);
+        }
+    });
 
     // ========================================
     // LOGIN
     // ========================================
 
-    loginForm.addEventListener(
-        "submit",
-        async function (event) {
+    loginForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
 
-            event.preventDefault();
+        const email = document.getElementById("loginEmail")?.value.trim();
+        const password = document.getElementById("loginPassword")?.value;
 
-            const email = document
-                .getElementById("loginEmail")
-                ?.value.trim();
-
-            const password = document
-                .getElementById("loginPassword")
-                ?.value;
-
-            if (!email || !password) {
-
-                showMessage(
-                    "Enter your email and password."
-                );
-
-                return;
-            }
-
-            setLoading(loginForm, true);
-
-            showMessage(
-                "Signing in...",
-                true
-            );
-
-            try {
-
-                const { data, error } =
-                    await db.auth.signInWithPassword({
-                        email,
-                        password
-                    });
-
-                if (error) throw error;
-
-                loginForm.reset();
-
-                await loadUserAccount(data.user);
-
-                showMessage(
-                    "Welcome to MG WATCH & EARN!",
-                    true
-                );
-
-            } catch (error) {
-
-                showMessage(
-                    explainError(error)
-                );
-
-            } finally {
-
-                setLoading(loginForm, false);
-            }
+        if (!email || !password) {
+            showMessage("Enter your email and password.");
+            return;
         }
-    );
+
+        setLoading(loginForm, true);
+        showMessage("Signing in...", true);
+
+        try {
+            const { data, error } = await db.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            if (error) throw error;
+
+            loginForm.reset();
+
+            await loadUserAccount(data.user);
+
+            showMessage("Welcome to MG WATCH & EARN!", true);
+
+        } catch (error) {
+            showMessage(explainError(error));
+        } finally {
+            setLoading(loginForm, false);
+        }
+    });
 
     // ========================================
     // LOGOUT
     // ========================================
 
     if (logoutButton) {
+        logoutButton.addEventListener("click", async function () {
+            logoutButton.disabled = true;
 
-        logoutButton.addEventListener(
-            "click",
-            async function () {
+            try {
+                const { error } = await db.auth.signOut();
 
-                logoutButton.disabled = true;
-
-                try {
-
-                    const { error } =
-                        await db.auth.signOut();
-
-                    if (error) throw error;
-
-                    showLoginForms();
-
-                    if (advertisementList) {
-                        advertisementList.replaceChildren();
-                    }
-
-                    if (advertisementMessage) {
-
-                        advertisementMessage.textContent =
-                            "Please log in to view advertisements.";
-                    }
-
-                    showMessage(
-                        "You have successfully logged out.",
-                        true
-                    );
-
-                    document
-                        .getElementById("account")
-                        ?.scrollIntoView({
-                            behavior: "smooth"
-                        });
-
-                } catch (error) {
-
-                    showMessage(
-                        explainError(error)
-                    );
-
-                } finally {
-
-                    logoutButton.disabled = false;
-                }
-            }
-        );
-    }
-
-    // ========================================
-    // CHECK EXISTING LOGIN SESSION
-    // ========================================
-
-    async function checkSession() {
-
-        try {
-
-            const { data, error } =
-                await db.auth.getSession();
-
-            if (error) throw error;
-
-            if (data.session) {
-
-                await loadUserAccount(
-                    data.session.user
-                );
-
-            } else {
+                if (error) throw error;
 
                 showLoginForms();
-            }
-
-        } catch (error) {
-
-            console.error(
-                "Session checking error:",
-                error
-            );
-
-            showLoginForms();
-
-            showMessage(
-                explainError(error)
-            );
-        }
-    }
-
-    // ========================================
-    // AUTHENTICATION CHANGES
-    // ========================================
-
-    db.auth.onAuthStateChange(
-        (event, session) => {
-
-            if (event === "SIGNED_OUT") {
-
-                showLoginForms();
-
-                const adminPanel =
-                    document.getElementById("mgAdminPanel");
-
-                if (adminPanel) {
-                    adminPanel.hidden = true;
-                }
 
                 if (advertisementList) {
                     advertisementList.replaceChildren();
                 }
 
-            } else if (
-                session &&
-                (
-                    event === "SIGNED_IN" ||
-                    event === "TOKEN_REFRESHED" ||
-                    event === "USER_UPDATED"
-                )
-            ) {
+                if (advertisementMessage) {
+                    advertisementMessage.textContent =
+                        "Please log in to view advertisements.";
+                }
 
-                setTimeout(() => {
+                showMessage("You have successfully logged out.", true);
 
-                    loadUserAccount(session.user);
-
-                }, 0);
+            } catch (error) {
+                showMessage(explainError(error));
+            } finally {
+                logoutButton.disabled = false;
             }
-        }
-    );
+        });
+    }
 
     // ========================================
-    // INTERNET CONNECTION STATUS
+    // SESSION CHECK
     // ========================================
 
-    window.addEventListener(
-        "offline",
-        function () {
+    async function checkSession() {
+        try {
+            const { data, error } = await db.auth.getSession();
 
-            showMessage(
-                "Internet connection lost."
-            );
+            if (error) throw error;
+
+            if (data.session) {
+                await loadUserAccount(data.session.user);
+            } else {
+                showLoginForms();
+            }
+
+        } catch (error) {
+            console.error("Session error:", error);
+            showLoginForms();
+            showMessage(explainError(error));
         }
-    );
+    }
 
-    window.addEventListener(
-        "online",
-        function () {
+    // ========================================
+    // AUTHENTICATION EVENTS
+    // ========================================
 
-            showMessage(
-                "Internet connection restored.",
-                true
-            );
+    db.auth.onAuthStateChange((event, session) => {
+        if (event === "SIGNED_OUT") {
+            showLoginForms();
+
+            if (advertisementList) {
+                advertisementList.replaceChildren();
+            }
+
+        } else if (
+            session &&
+            (
+                event === "SIGNED_IN" ||
+                event === "TOKEN_REFRESHED" ||
+                event === "USER_UPDATED"
+            )
+        ) {
+            setTimeout(() => {
+                loadUserAccount(session.user);
+            }, 0);
         }
-    );
+    });
+
+    // ========================================
+    // INTERNET STATUS
+    // ========================================
+
+    window.addEventListener("offline", () => {
+        showMessage("Internet connection lost.");
+    });
+
+    window.addEventListener("online", () => {
+        showMessage("Internet connection restored.", true);
+    });
 
     // ========================================
     // START WEBSITE
