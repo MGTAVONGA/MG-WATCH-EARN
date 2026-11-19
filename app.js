@@ -1,8 +1,7 @@
 // ========================================
 // MG WATCH & EARN
 // COMPLETE WEBSITE + ADMIN MANAGEMENT
-// REWARDS MANAGEMENT
-// DUPLICATE ADMIN PANEL FIX
+// USER, ADS, REWARDS, WALLETS & TRANSACTIONS
 // ========================================
 
 // ========================================
@@ -16,7 +15,6 @@ const SUPABASE_PUBLISHABLE_KEY =
     "sb_publishable_mf5Guob3rMWAld0imIXkqg_nF0NBi9p";
 
 let db = null;
-
 let adminAccessCheckInProgress = false;
 
 try {
@@ -86,7 +84,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     function showMessage(text, success = false) {
+
         message.textContent = text;
+
         message.style.color =
             success ? "#00e5a0" : "#ff7777";
     }
@@ -157,12 +157,14 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (!Number.isFinite(value)) return "$0.00";
 
         try {
+
             return new Intl.NumberFormat("en-US", {
                 style: "currency",
                 currency
             }).format(value);
 
         } catch {
+
             return "$" + value.toFixed(2);
         }
     }
@@ -180,11 +182,15 @@ document.addEventListener("DOMContentLoaded", async function () {
                 : null;
 
         } catch {
+
             return null;
         }
     }
 
-    function styleAdminButton(button, background = "#00e5a0") {
+    function styleAdminButton(
+        button,
+        background = "#00e5a0"
+    ) {
 
         button.style.cssText = [
             "background:" + background,
@@ -196,6 +202,83 @@ document.addEventListener("DOMContentLoaded", async function () {
             "cursor:pointer",
             "margin:5px"
         ].join(";");
+    }
+
+    function createAdminTable(parent, headings) {
+
+        const wrapper = createElement(
+            "div",
+            undefined,
+            parent
+        );
+
+        wrapper.style.overflowX = "auto";
+
+        const table = createElement(
+            "table",
+            undefined,
+            wrapper
+        );
+
+        table.style.cssText =
+            "width:100%;border-collapse:collapse;color:white;";
+
+        const thead = createElement(
+            "thead",
+            undefined,
+            table
+        );
+
+        const headerRow = createElement(
+            "tr",
+            undefined,
+            thead
+        );
+
+        headings.forEach(label => {
+
+            const th = createElement(
+                "th",
+                label,
+                headerRow
+            );
+
+            th.style.cssText =
+                "padding:10px;text-align:left;border-bottom:1px solid #00e5a0;white-space:nowrap;";
+        });
+
+        const tbody = createElement(
+            "tbody",
+            undefined,
+            table
+        );
+
+        return tbody;
+    }
+
+    function addAdminTableRow(tbody, values) {
+
+        const row = createElement(
+            "tr",
+            undefined,
+            tbody
+        );
+
+        values.forEach(value => {
+
+            const cell = createElement(
+                "td",
+                value === null || value === undefined
+                    ? ""
+                    : String(value),
+                row
+            );
+
+            cell.style.cssText =
+                "padding:10px;border-bottom:1px solid #29445f;white-space:nowrap;";
+        });
+
+        return row;
     }
 
     // ========================================
@@ -225,6 +308,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     function showLoginForms() {
 
         dashboard.hidden = true;
+
         registerForm.hidden = false;
         loginForm.hidden = false;
 
@@ -237,6 +321,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     function showDashboard(user) {
 
         dashboard.hidden = false;
+
         registerForm.hidden = true;
         loginForm.hidden = true;
 
@@ -295,6 +380,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
 
             if (availableBalanceElement) {
+
                 availableBalanceElement.textContent =
                     formatMoney(
                         balance,
@@ -875,94 +961,31 @@ document.addEventListener("DOMContentLoaded", async function () {
                 return;
             }
 
-            const wrapper = createElement(
-                "div",
-                undefined,
-                list
-            );
-
-            wrapper.style.overflowX = "auto";
-
-            const table = createElement(
-                "table",
-                undefined,
-                wrapper
-            );
-
-            table.style.cssText =
-                "width:100%;border-collapse:collapse;color:white;";
-
-            const thead = createElement(
-                "thead",
-                undefined,
-                table
-            );
-
-            const headerRow = createElement(
-                "tr",
-                undefined,
-                thead
-            );
-
-            [
-                "Email",
-                "Registration date",
-                "Last sign-in"
-            ].forEach(label => {
-
-                const th = createElement(
-                    "th",
-                    label,
-                    headerRow
-                );
-
-                th.style.cssText =
-                    "padding:10px;text-align:left;border-bottom:1px solid #00e5a0;";
-            });
-
-            const tbody = createElement(
-                "tbody",
-                undefined,
-                table
+            const tbody = createAdminTable(
+                list,
+                [
+                    "Email",
+                    "Registration date",
+                    "Last sign-in"
+                ]
             );
 
             users.forEach(user => {
 
-                const row = createElement(
-                    "tr",
-                    undefined,
-                    tbody
-                );
+                addAdminTableRow(
+                    tbody,
+                    [
+                        user.email || "No email",
 
-                const emailCell = createElement(
-                    "td",
-                    user.email || "No email",
-                    row
-                );
+                        user.created_at
+                            ? new Date(user.created_at).toLocaleDateString()
+                            : "Unknown",
 
-                const createdCell = createElement(
-                    "td",
-                    user.created_at
-                        ? new Date(user.created_at).toLocaleDateString()
-                        : "Unknown",
-                    row
+                        user.last_sign_in_at
+                            ? new Date(user.last_sign_in_at).toLocaleString()
+                            : "Never"
+                    ]
                 );
-
-                const lastCell = createElement(
-                    "td",
-                    user.last_sign_in_at
-                        ? new Date(user.last_sign_in_at).toLocaleString()
-                        : "Never",
-                    row
-                );
-
-                [
-                    emailCell,
-                    createdCell,
-                    lastCell
-                ].forEach(cell => {
-                    cell.style.padding = "10px";
-                });
             });
 
         } catch (error) {
@@ -1507,7 +1530,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                         if (
                             !Number.isFinite(amount) ||
-                            amount < 0
+                            amount <= 0
                         ) {
 
                             showMessage(
@@ -1558,7 +1581,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                                 true
                             );
 
-                            await loadAdminRewards(panel);
+                            await Promise.all([
+                                loadAdminRewards(panel),
+                                loadAdminWallets(panel),
+                                loadAdminTransactions(panel)
+                            ]);
 
                         } catch (error) {
 
@@ -1663,6 +1690,282 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // ========================================
+    // ADMIN WALLET MANAGEMENT
+    // ========================================
+
+    async function loadAdminWallets(panel) {
+
+        const list =
+            panel.querySelector("#mgAdminWalletsList");
+
+        const count =
+            panel.querySelector("#mgAdminWalletCount");
+
+        const refresh =
+            panel.querySelector("#mgRefreshWallets");
+
+        const total =
+            panel.querySelector("#mgAdminWalletTotal");
+
+        if (!list || !count || !refresh || !total) return;
+
+        refresh.disabled = true;
+        refresh.textContent = "LOADING...";
+
+        list.replaceChildren();
+
+        createElement(
+            "p",
+            "Loading user wallets...",
+            list
+        );
+
+        try {
+
+            const { data, error } =
+                await db.rpc("admin_get_wallets");
+
+            if (error) throw error;
+
+            const wallets = data || [];
+
+            list.replaceChildren();
+
+            count.textContent =
+                "TOTAL USER WALLETS: " + wallets.length;
+
+            const totals = {};
+
+            wallets.forEach(wallet => {
+
+                const currency = wallet.currency || "USD";
+
+                totals[currency] =
+                    (totals[currency] || 0) +
+                    Number(wallet.balance || 0);
+            });
+
+            const totalText = Object.entries(totals)
+                .map(([currency, amount]) =>
+                    formatMoney(amount, currency)
+                )
+                .join(" | ");
+
+            total.textContent =
+                "TOTAL WALLET BALANCES: " +
+                (totalText || "$0.00");
+
+            if (wallets.length === 0) {
+
+                createElement(
+                    "p",
+                    "No user wallets found.",
+                    list
+                );
+
+                return;
+            }
+
+            const tbody = createAdminTable(
+                list,
+                [
+                    "User Email",
+                    "Balance",
+                    "Currency",
+                    "Created"
+                ]
+            );
+
+            wallets.forEach(wallet => {
+
+                addAdminTableRow(
+                    tbody,
+                    [
+                        wallet.user_email || "Unknown user",
+
+                        formatMoney(
+                            wallet.balance,
+                            wallet.currency || "USD"
+                        ),
+
+                        wallet.currency || "USD",
+
+                        wallet.created_at
+                            ? new Date(wallet.created_at).toLocaleDateString()
+                            : "Unknown"
+                    ]
+                );
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Admin wallet error:",
+                error
+            );
+
+            list.replaceChildren();
+
+            createElement(
+                "p",
+                "Could not load wallets: " +
+                (error.message || "Unknown error"),
+                list
+            );
+
+            total.textContent =
+                "TOTAL WALLET BALANCES: Unavailable";
+
+        } finally {
+
+            refresh.disabled = false;
+            refresh.textContent = "REFRESH WALLETS";
+        }
+    }
+
+    // ========================================
+    // ADMIN TRANSACTIONS MANAGEMENT
+    // ========================================
+
+    async function loadAdminTransactions(panel) {
+
+        const list =
+            panel.querySelector("#mgAdminTransactionsList");
+
+        const count =
+            panel.querySelector("#mgAdminTransactionCount");
+
+        const refresh =
+            panel.querySelector("#mgRefreshTransactions");
+
+        if (!list || !count || !refresh) return;
+
+        refresh.disabled = true;
+        refresh.textContent = "LOADING...";
+
+        list.replaceChildren();
+
+        createElement(
+            "p",
+            "Loading wallet transactions...",
+            list
+        );
+
+        try {
+
+            const { data, error } =
+                await db.rpc("admin_get_transactions");
+
+            if (error) throw error;
+
+            const transactions = data || [];
+
+            list.replaceChildren();
+
+            const credits = transactions.filter(
+                item =>
+                    String(item.transaction_type).toLowerCase() === "credit"
+            );
+
+            const debits = transactions.filter(
+                item =>
+                    String(item.transaction_type).toLowerCase() === "debit"
+            );
+
+            count.textContent =
+                "TOTAL TRANSACTIONS: " +
+                transactions.length +
+                " | CREDITS: " +
+                credits.length +
+                " | DEBITS: " +
+                debits.length;
+
+            if (transactions.length === 0) {
+
+                createElement(
+                    "p",
+                    "No wallet transactions found yet.",
+                    list
+                );
+
+                return;
+            }
+
+            const tbody = createAdminTable(
+                list,
+                [
+                    "User Email",
+                    "Amount",
+                    "Type",
+                    "Description",
+                    "Date",
+                    "Transaction ID"
+                ]
+            );
+
+            transactions.forEach(transaction => {
+
+                const currency = "USD";
+
+                const row = addAdminTableRow(
+                    tbody,
+                    [
+                        transaction.user_email || "Unknown user",
+
+                        formatMoney(
+                            transaction.amount,
+                            currency
+                        ),
+
+                        String(
+                            transaction.transaction_type || "Unknown"
+                        ).toUpperCase(),
+
+                        transaction.description || "",
+
+                        transaction.created_at
+                            ? new Date(transaction.created_at).toLocaleString()
+                            : "Unknown",
+
+                        transaction.transaction_id || ""
+                    ]
+                );
+
+                const type = String(
+                    transaction.transaction_type || ""
+                ).toLowerCase();
+
+                if (type === "credit") {
+                    row.style.color = "#00e5a0";
+                } else if (type === "debit") {
+                    row.style.color = "#ff7777";
+                }
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Admin transaction error:",
+                error
+            );
+
+            list.replaceChildren();
+
+            createElement(
+                "p",
+                "Could not load transactions: " +
+                (error.message || "Unknown error"),
+                list
+            );
+
+        } finally {
+
+            refresh.disabled = false;
+            refresh.textContent = "REFRESH TRANSACTIONS";
+        }
+    }
+
+    // ========================================
     // ADMIN DASHBOARD
     // DUPLICATE CREATION PROTECTION
     // ========================================
@@ -1754,15 +2057,17 @@ document.addEventListener("DOMContentLoaded", async function () {
                     panel
                 );
 
-                const status = createElement(
+                const adminStatus = createElement(
                     "p",
                     "ADMIN STATUS: ACTIVE",
                     panel
                 );
 
-                status.style.color = "#00e5a0";
+                adminStatus.style.color = "#00e5a0";
 
-                // USER MANAGEMENT
+                // ========================================
+                // USER MANAGEMENT SECTION
+                // ========================================
 
                 createElement("hr", undefined, panel);
 
@@ -1789,6 +2094,8 @@ document.addEventListener("DOMContentLoaded", async function () {
                 userRefresh.id = "mgRefreshUsers";
                 userRefresh.type = "button";
 
+                styleAdminButton(userRefresh);
+
                 const userList = createElement(
                     "div",
                     undefined,
@@ -1801,7 +2108,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                     loadAdminUsers(panel);
                 });
 
-                // ADVERTISEMENT MANAGEMENT
+                // ========================================
+                // ADVERTISEMENT MANAGEMENT SECTION
+                // ========================================
 
                 createElement("hr", undefined, panel);
 
@@ -1947,6 +2256,8 @@ document.addEventListener("DOMContentLoaded", async function () {
                 adRefresh.id = "mgRefreshAds";
                 adRefresh.type = "button";
 
+                styleAdminButton(adRefresh);
+
                 const adList = createElement(
                     "div",
                     undefined,
@@ -1959,7 +2270,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                     loadAdminAds(panel);
                 });
 
-                // REWARDS MANAGEMENT
+                // ========================================
+                // REWARDS MANAGEMENT SECTION
+                // ========================================
 
                 createElement("hr", undefined, panel);
 
@@ -2006,7 +2319,119 @@ document.addEventListener("DOMContentLoaded", async function () {
                     loadAdminRewards(panel);
                 });
 
+                // ========================================
+                // WALLET MANAGEMENT SECTION
+                // ========================================
+
+                createElement("hr", undefined, panel);
+
+                createElement(
+                    "h2",
+                    "👛 WALLET MANAGEMENT",
+                    panel
+                );
+
+                createElement(
+                    "p",
+                    "View registered users' wallet balances and currencies.",
+                    panel
+                );
+
+                const walletCount = createElement(
+                    "h3",
+                    "TOTAL USER WALLETS: Loading...",
+                    panel
+                );
+
+                walletCount.id = "mgAdminWalletCount";
+
+                const walletTotal = createElement(
+                    "h3",
+                    "TOTAL WALLET BALANCES: Loading...",
+                    panel
+                );
+
+                walletTotal.id = "mgAdminWalletTotal";
+
+                const walletRefresh = createElement(
+                    "button",
+                    "REFRESH WALLETS",
+                    panel
+                );
+
+                walletRefresh.id = "mgRefreshWallets";
+                walletRefresh.type = "button";
+
+                styleAdminButton(walletRefresh);
+
+                const walletList = createElement(
+                    "div",
+                    undefined,
+                    panel
+                );
+
+                walletList.id = "mgAdminWalletsList";
+
+                walletRefresh.addEventListener("click", () => {
+                    loadAdminWallets(panel);
+                });
+
+                // ========================================
+                // TRANSACTIONS MANAGEMENT SECTION
+                // ========================================
+
+                createElement("hr", undefined, panel);
+
+                createElement(
+                    "h2",
+                    "📊 TRANSACTIONS MANAGEMENT",
+                    panel
+                );
+
+                createElement(
+                    "p",
+                    "Review wallet credits, debits and transaction records.",
+                    panel
+                );
+
+                const transactionCount = createElement(
+                    "h3",
+                    "TOTAL TRANSACTIONS: Loading...",
+                    panel
+                );
+
+                transactionCount.id =
+                    "mgAdminTransactionCount";
+
+                const transactionRefresh = createElement(
+                    "button",
+                    "REFRESH TRANSACTIONS",
+                    panel
+                );
+
+                transactionRefresh.id =
+                    "mgRefreshTransactions";
+
+                transactionRefresh.type = "button";
+
+                styleAdminButton(transactionRefresh);
+
+                const transactionList = createElement(
+                    "div",
+                    undefined,
+                    panel
+                );
+
+                transactionList.id =
+                    "mgAdminTransactionsList";
+
+                transactionRefresh.addEventListener("click", () => {
+                    loadAdminTransactions(panel);
+                });
+
+                // ========================================
                 // SECURITY NOTICE
+                // ========================================
 
                 createElement("hr", undefined, panel);
 
@@ -2022,10 +2447,14 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             panel.hidden = false;
 
+            // LOAD ALL ADMIN SECTIONS
+
             await Promise.all([
                 loadAdminUsers(panel),
                 loadAdminAds(panel),
-                loadAdminRewards(panel)
+                loadAdminRewards(panel),
+                loadAdminWallets(panel),
+                loadAdminTransactions(panel)
             ]);
 
             return true;
