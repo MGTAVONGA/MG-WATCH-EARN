@@ -288,4 +288,576 @@ document.addEventListener("DOMContentLoaded", async function () {
         } catch {
             return null;
         }
+    }    // ========================================
+    // LOAD ACTIVE ADVERTISEMENTS
+    // ========================================
+
+    let advertisementsLoading = false;
+
+    async function loadAdvertisements() {
+
+        if (!advertisementList || !advertisementMessage) {
+            return;
+        }
+
+        // Prevent simultaneous advertisement loading.
+        if (advertisementsLoading) {
+            return;
+        }
+
+        advertisementsLoading = true;
+
+        advertisementList.replaceChildren();
+
+        advertisementMessage.textContent =
+            "Loading available advertisements...";
+
+        try {
+
+            const { data, error } = await db
+                .from("advertisements")
+                .select(
+                    "id, title, description, video_url, advertiser_name, duration_seconds"
+                )
+                .eq("status", "active")
+                .order("created_at", { ascending: false });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+
+                advertisementMessage.textContent =
+                    "No sponsored advertisements are available right now. Please check again later.";
+
+                return;
+            }
+
+            // Remove duplicate advertisement IDs.
+            const uniqueAdvertisements = [
+                ...new Map(data.map(ad => [ad.id, ad])).values()
+            ];
+
+            advertisementMessage.textContent =
+                uniqueAdvertisements.length +
+                " sponsored campaign(s) available.";
+
+            uniqueAdvertisements.forEach(ad => {
+
+                const card = document.createElement("div");
+
+                card.className = "advertisement-card";
+
+                const title = document.createElement("h3");
+
+                title.textContent =
+                    ad.title || "Sponsored advertisement";
+
+                const description = document.createElement("p");
+
+                description.textContent =
+                    ad.description ||
+                    "Discover this sponsored campaign.";
+
+                card.appendChild(title);
+
+                if (ad.advertiser_name) {
+
+                    const advertiser = document.createElement("p");
+
+                    advertiser.textContent =
+                        "Sponsored by: " + ad.advertiser_name;
+
+                    card.appendChild(advertiser);
+                }
+
+                card.appendChild(description);
+
+                const duration = document.createElement("p");
+
+                duration.textContent =
+                    "Video duration: " +
+                    (Number(ad.duration_seconds) || 30) +
+                    " seconds";
+
+                card.appendChild(duration);
+
+                const videoURL = safeVideoURL(ad.video_url);
+
+                if (videoURL) {
+
+                    const video = document.createElement("video");
+
+                    video.controls = true;
+                    video.preload = "metadata";
+                    video.playsInline = true;
+                    video.src = videoURL;
+
+                    card.appendChild(video);
+
+                    // DEMONSTRATION WATCH TIMER
+                    // This timer does not create or award money.
+
+                    const timerBox = document.createElement("div");
+
+                    timerBox.className = "watch-timer";
+                    timerBox.style.marginTop = "14px";
+
+                    const requiredSeconds = Math.max(
+                        1,
+                        Math.floor(Number(ad.duration_seconds) || 15)
+                    );
+
+                    const timerLabel = document.createElement("p");
+
+                    timerLabel.textContent =
+                        "Time watched: 0 / " +
+                        requiredSeconds +
+                        " seconds";
+
+                    const progress = document.createElement("progress");
+
+                    progress.max = requiredSeconds;
+                    progress.value = 0;
+                    progress.style.width = "100%";
+                    progress.style.height = "14px";
+
+                    const status = document.createElement("p");
+
+                    status.textContent =
+                        "Play the video to start the timer.";
+
+                    timerBox.append(timerLabel, progress, status);
+
+                    card.appendChild(timerBox);
+
+                    let watchedSeconds = 0;
+                    let timerInterval = null;
+                    let lastVideoTime = 0;
+                    let completed = false;
+
+                    function stopWatchTimer() {
+
+                        if (timerInterval !== null) {
+
+                            clearInterval(timerInterval);
+
+                            timerInterval = null;
+                        }
+                    }
+
+                    function updateWatchDisplay() {
+
+                        timerLabel.textContent =
+                            "Time watched: " +
+                            watchedSeconds +
+                            " / " +
+                            requiredSeconds +
+                            " seconds";
+
+                        progress.value = watchedSeconds;
+                    }
+
+                    video.addEventListener("play", function () {
+
+                        if (completed || timerInterval !== null) {
+                            return;
+                        }
+
+                        lastVideoTime = video.currentTime;
+
+                        status.textContent =
+                            "Timer running while the video plays.";
+
+                        timerInterval = setInterval(function () {
+
+                            if (
+                                document.visibilityState !== "visible" ||
+                                video.paused ||
+                                video.ended
+                            ) {
+                                return;
+                            }
+
+                            const currentTime = video.currentTime;
+
+                            const mediaAdvanced =
+                                currentTime > lastVideoTime + 0.1 &&
+                                currentTime - lastVideoTime < 2;
+
+                            lastVideoTime = currentTime;
+
+                            if (mediaAdvanced) {
+
+                                watchedSeconds = Math.min(
+                                    requiredSeconds,
+                                    watchedSeconds + 1
+                                );
+
+                                updateWatchDisplay();
+                            }
+
+                            if (watchedSeconds >= requiredSeconds) {
+
+                                completed = true;
+
+                                stopWatchTimer();
+
+                                video.pause();
+
+                                status.textContent =
+                                    "Demonstration viewing complete. No reward has been issued.";
+                            }
+
+                        }, 1000);
+                    });
+
+                    video.addEventListener("pause", function () {
+
+                        stopWatchTimer();
+
+                        if (!completed) {
+
+                            status.textContent =
+                                "Timer paused. Play the video to continue.";
+                        }
+                    });
+
+                    video.addEventListener("ended", function () {
+
+                        stopWatchTimer();
+
+                        if (!completed) {
+
+                            status.textContent =
+                                "Video ended. Replay it to continue the demonstration timer.";
+                        }
+                    });
+
+                    video.addEventListener("seeking", function () {
+
+                        lastVideoTime = video.currentTime;
+                    });
+
+                    video.addEventListener("seeked", function () {
+
+                        lastVideoTime = video.currentTime;
+                    });
+
+                } else if (ad.video_url) {
+
+                    const warning = document.createElement("p");
+
+                    warning.textContent =
+                        "This video link cannot currently be displayed.";
+
+                    card.appendChild(warning);
+                }
+
+                advertisementList.appendChild(card);
+            });
+
+        } catch (error) {
+
+            console.error("Advertisement loading error:", error);
+
+            advertisementMessage.textContent =
+                "We could not load advertisements. Please refresh and try again.";
+
+        } finally {
+
+            // Allow future advertisement refreshes.
+            advertisementsLoading = false;
+        }
     }
+
+    // ========================================
+    // LOAD USER ACCOUNT
+    // ========================================
+
+    async function loadUserAccount(user) {
+
+        if (!user || !user.id) {
+            return;
+        }
+
+        showDashboard(user);
+
+        await Promise.all([
+            loadWallet(user),
+            loadAdvertisements()
+        ]);
+    }
+
+    // ========================================
+    // CHECK SUPABASE
+    // ========================================
+
+    if (!db) {
+
+        showMessage(
+            "Supabase connection failed. Refresh the website."
+        );
+
+        return;
+    }    // ========================================
+    // REGISTRATION
+    // ========================================
+
+    registerForm.addEventListener("submit", async function (event) {
+
+        event.preventDefault();
+
+        const email = document
+            .getElementById("registerEmail")
+            ?.value.trim();
+
+        const password = document
+            .getElementById("registerPassword")
+            ?.value;
+
+        if (!email || !password) {
+            showMessage("Please enter your email and password.");
+            return;
+        }
+
+        if (password.length < 8) {
+            showMessage("Password must contain at least 8 characters.");
+            return;
+        }
+
+        setLoading(registerForm, true);
+
+        showMessage("Creating your account...", true);
+
+        try {
+
+            const { data, error } = await db.auth.signUp({
+
+                email,
+                password,
+
+                options: {
+                    emailRedirectTo:
+                        window.location.origin +
+                        window.location.pathname
+                }
+
+            });
+
+            if (error) throw error;
+
+            registerForm.reset();
+
+            if (data.session) {
+
+                await loadUserAccount(data.user);
+
+                showMessage(
+                    "Your account was created successfully!",
+                    true
+                );
+
+            } else {
+
+                showMessage(
+                    "Registration successful! Please verify your email.",
+                    true
+                );
+            }
+
+        } catch (error) {
+
+            showMessage(explainError(error));
+
+        } finally {
+
+            setLoading(registerForm, false);
+        }
+
+    });
+
+    // ========================================
+    // LOGIN
+    // ========================================
+
+    loginForm.addEventListener("submit", async function (event) {
+
+        event.preventDefault();
+
+        const email = document
+            .getElementById("loginEmail")
+            ?.value.trim();
+
+        const password = document
+            .getElementById("loginPassword")
+            ?.value;
+
+        if (!email || !password) {
+            showMessage("Enter your email and password.");
+            return;
+        }
+
+        setLoading(loginForm, true);
+
+        showMessage("Signing in...", true);
+
+        try {
+
+            const { data, error } = await db.auth
+                .signInWithPassword({
+                    email,
+                    password
+                });
+
+            if (error) throw error;
+
+            loginForm.reset();
+
+            await loadUserAccount(data.user);
+
+            showMessage(
+                "Welcome to MG WATCH & EARN!",
+                true
+            );
+
+        } catch (error) {
+
+            showMessage(explainError(error));
+
+        } finally {
+
+            setLoading(loginForm, false);
+        }
+
+    });
+
+    // ========================================
+    // LOGOUT
+    // ========================================
+
+    if (logoutButton) {
+
+        logoutButton.addEventListener("click", async function () {
+
+            logoutButton.disabled = true;
+
+            try {
+
+                const { error } = await db.auth.signOut();
+
+                if (error) throw error;
+
+                showLoginForms();
+
+                if (advertisementList) {
+                    advertisementList.replaceChildren();
+                }
+
+                if (advertisementMessage) {
+                    advertisementMessage.textContent =
+                        "Please log in to view advertisements.";
+                }
+
+                showMessage(
+                    "You have successfully logged out.",
+                    true
+                );
+
+                document.getElementById("account")
+                    ?.scrollIntoView({
+                        behavior: "smooth"
+                    });
+
+            } catch (error) {
+
+                showMessage(explainError(error));
+
+            } finally {
+
+                logoutButton.disabled = false;
+            }
+
+        });
+    }
+
+    // ========================================
+    // EXISTING LOGIN SESSION
+    // ========================================
+
+    async function checkSession() {
+
+        try {
+
+            const { data, error } =
+                await db.auth.getSession();
+
+            if (error) throw error;
+
+            if (data.session) {
+
+                await loadUserAccount(data.session.user);
+
+            } else {
+
+                showLoginForms();
+            }
+
+        } catch (error) {
+
+            console.error(error);
+
+            showLoginForms();
+
+            showMessage(explainError(error));
+        }
+    }
+
+    // ========================================
+    // AUTHENTICATION CHANGES
+    // ========================================
+
+    db.auth.onAuthStateChange((event, session) => {
+
+        if (event === "SIGNED_OUT") {
+
+            showLoginForms();
+
+            if (advertisementList) {
+                advertisementList.replaceChildren();
+            }
+
+        } else if (
+            session &&
+            (
+                event === "SIGNED_IN" ||
+                event === "TOKEN_REFRESHED" ||
+                event === "USER_UPDATED"
+            )
+        ) {
+
+            setTimeout(() => {
+                loadUserAccount(session.user);
+            }, 0);
+        }
+
+    });
+
+    // ========================================
+    // INTERNET STATUS
+    // ========================================
+
+    window.addEventListener("offline", function () {
+        showMessage("Internet connection lost.");
+    });
+
+    window.addEventListener("online", function () {
+        showMessage("Internet connection restored.", true);
+    });
+
+    // ========================================
+    // START WEBSITE
+    // ========================================
+
+    await checkSession();
+
+});
