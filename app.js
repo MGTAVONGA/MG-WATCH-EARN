@@ -253,10 +253,520 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // ========================================
-    // USER ADVERTISEMENTS
-    // ========================================
+// USER ADVERTISEMENTS
+// SECURE VIEWING SESSION INTEGRATION
+// ========================================
 
-    async function loadAdvertisements() {
+async function loadAdvertisements() {
+
+    if (!advertisementList || !advertisementMessage) return;
+
+    advertisementList.replaceChildren();
+
+    advertisementMessage.textContent =
+        "Loading sponsored advertisements...";
+
+    try {
+
+        const { data, error } = await db
+            .from("advertisements")
+            .select(`
+                id,
+                title,
+                description,
+                video_url,
+                advertiser_name,
+                duration_seconds
+            `)
+            .eq("status", "active")
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+
+            advertisementMessage.textContent =
+                "No sponsored advertisements are available right now. Please check again later.";
+
+            return;
+        }
+
+        const uniqueAds = [
+            ...new Map(data.map(ad => [ad.id, ad])).values()
+        ];
+
+        advertisementMessage.textContent =
+            uniqueAds.length +
+            " sponsored campaign(s) available.";
+
+        uniqueAds.forEach(ad => {
+
+            const card = createElement(
+                "div",
+                undefined,
+                advertisementList
+            );
+
+            card.className = "advertisement-card";
+
+            createElement(
+                "h3",
+                ad.title || "Sponsored advertisement",
+                card
+            );
+
+            createElement(
+                "p",
+                "Sponsored by: " +
+                (ad.advertiser_name || "Advertiser"),
+                card
+            );
+
+            createElement(
+                "p",
+                ad.description || "",
+                card
+            );
+
+            const duration = Math.max(
+                1,
+                Math.floor(Number(ad.duration_seconds) || 15)
+            );
+
+            createElement(
+                "p",
+                "Required viewing time: " + duration + " seconds",
+                card
+            );
+
+            const videoURL = safeVideoURL(ad.video_url);
+
+            if (!videoURL) {
+
+                createElement(
+                    "p",
+                    "This advertisement does not have a valid HTTPS video link.",
+                    card
+                );
+
+                return;
+            }
+
+            // VIDEO PLAYER
+
+            const video = createElement(
+                "video",
+                undefined,
+                card
+            );
+
+            video.controls = false;
+            video.preload = "metadata";
+            video.playsInline = true;
+            video.style.width = "100%";
+            video.style.display = "none";
+            video.src = videoURL;
+
+            // START BUTTON
+
+            const startButton = createElement(
+                "button",
+                "START WATCHING",
+                card
+            );
+
+            startButton.type = "button";
+
+            startButton.style.cssText = [
+                "background:#00e5a0",
+                "color:#071321",
+                "padding:13px 20px",
+                "border:0",
+                "border-radius:6px",
+                "font-weight:bold",
+                "cursor:pointer",
+                "margin:10px 0"
+            ].join(";");
+
+            // PROGRESS DISPLAY
+
+            const timerLabel = createElement(
+                "p",
+                "Time watched: 0 / " + duration + " seconds",
+                card
+            );
+
+            const progress = createElement(
+                "progress",
+                undefined,
+                card
+            );
+
+            progress.max = duration;
+            progress.value = 0;
+            progress.style.width = "100%";
+
+            const status = createElement(
+                "p",
+                "Click START WATCHING to begin your viewing session.",
+                card
+            );
+
+            // RETRY BUTTON
+
+            const retryButton = createElement(
+                "button",
+                "RETRY COMPLETION",
+                card
+            );
+
+            retryButton.type = "button";
+            retryButton.hidden = true;
+
+            let sessionId = null;
+            let watched = 0;
+            let lastTime = 0;
+            let timer = null;
+            let completed = false;
+            let finishing = false;
+
+            video.playbackRate = 1;
+
+            // ========================================
+            // UPDATE PROGRESS
+            // ========================================
+
+            function updateProgress() {
+
+                timerLabel.textContent =
+                    "Time watched: " +
+                    Math.floor(watched) +
+                    " / " +
+                    duration +
+                    " seconds";
+
+                progress.value = Math.min(
+                    duration,
+                    watched
+                );
+            }
+
+            // ========================================
+            // STOP TIMER
+            // ========================================
+
+            function stopTimer() {
+
+                if (timer !== null) {
+                    clearInterval(timer);
+                    timer = null;
+                }
+            }
+
+            // ========================================
+            // FINISH VIEWING SESSION
+            // ========================================
+
+            async function finishViewing() {
+
+                if (!sessionId || completed || finishing) return;
+
+                finishing = true;
+
+                stopTimer();
+
+                video.pause();
+
+                status.textContent =
+                    "Submitting your completed viewing session...";
+
+                retryButton.hidden = true;
+
+                try {
+
+                    const { data, error } = await db.rpc(
+                        "finish_ad_watch",
+                        {
+                            p_session_id: sessionId
+                        }
+                    );
+
+                    if (error) throw error;
+
+                    if (data && data.success === true) {
+
+                        completed = true;
+                        finishing = false;
+
+                        startButton.disabled = true;
+                        startButton.textContent = "COMPLETED";
+
+                        video.controls = false;
+
+                        status.textContent =
+                            data.reward_status === "pending"
+                                ? "Advertisement completed successfully. Your reward is PENDING ADMIN APPROVAL."
+                                : "Advertisement completed successfully. No monetary reward was issued.";
+
+                        return;
+                    }
+
+                    if (
+                        data &&
+                        Number(data.seconds_remaining) > 0
+                    ) {
+
+                        const remaining = Math.ceil(
+                            Number(data.seconds_remaining)
+                        );
+
+                        status.textContent =
+                            "Please wait " +
+                            remaining +
+                            " more seconds while the database verifies your session.";
+
+                        finishing = false;
+
+                        setTimeout(() => {
+                            finishViewing();
+                        }, (remaining + 1) * 1000);
+
+                        return;
+                    }
+
+                    finishing = false;
+
+                    status.textContent =
+                        data?.message ||
+                        "The viewing session could not be completed.";
+
+                    if (
+                        data?.message &&
+                        data.message.toLowerCase().includes("already completed")
+                    ) {
+                        completed = true;
+                        startButton.disabled = true;
+                        startButton.textContent = "COMPLETED";
+                    }
+
+                    retryButton.hidden = false;
+
+                } catch (error) {
+
+                    console.error(
+                        "Finish advertisement error:",
+                        error
+                    );
+
+                    finishing = false;
+
+                    status.textContent =
+                        "Could not submit completion. Check your connection and retry.";
+
+                    retryButton.hidden = false;
+                }
+            }
+
+            retryButton.addEventListener(
+                "click",
+                finishViewing
+            );
+
+            // ========================================
+            // WATCHING TIMER
+            // ========================================
+
+            function startTimer() {
+
+                if (timer !== null || completed) return;
+
+                lastTime = video.currentTime;
+
+                timer = setInterval(() => {
+
+                    if (
+                        document.visibilityState !== "visible" ||
+                        video.paused ||
+                        video.ended
+                    ) {
+                        return;
+                    }
+
+                    const currentTime = video.currentTime;
+
+                    const difference = currentTime - lastTime;
+
+                    if (
+                        difference > 0 &&
+                        difference <= 1.5
+                    ) {
+
+                        watched = Math.min(
+                            duration,
+                            watched + difference
+                        );
+
+                        updateProgress();
+                    }
+
+                    lastTime = currentTime;
+
+                    if (watched >= duration) {
+
+                        watched = duration;
+
+                        updateProgress();
+
+                        finishViewing();
+                    }
+
+                }, 500);
+            }
+
+            video.addEventListener("playing", () => {
+
+                if (!completed) {
+                    status.textContent =
+                        "Advertisement playing. Please keep watching.";
+
+                    startTimer();
+                }
+
+            });
+
+            video.addEventListener("pause", () => {
+
+                stopTimer();
+
+                if (!completed && !finishing) {
+                    status.textContent =
+                        "Video paused. Resume to continue.";
+                }
+
+            });
+
+            video.addEventListener("ended", () => {
+
+                stopTimer();
+
+                if (!completed && !finishing) {
+
+                    if (watched >= duration) {
+                        finishViewing();
+                    } else {
+                        status.textContent =
+                            "Video ended before the required viewing time. Your session has not been completed.";
+                    }
+                }
+
+            });
+
+            // Prevent skipping ahead in the video.
+
+            video.addEventListener("seeking", () => {
+
+                if (
+                    sessionId &&
+                    !completed &&
+                    Math.abs(video.currentTime - lastTime) > 1.5
+                ) {
+
+                    video.currentTime = lastTime;
+
+                    status.textContent =
+                        "Please watch the advertisement without skipping.";
+                }
+
+            });
+
+            video.addEventListener("ratechange", () => {
+
+                if (video.playbackRate !== 1) {
+                    video.playbackRate = 1;
+                }
+
+            });
+
+            // ========================================
+            // START ADVERTISEMENT
+            // ========================================
+
+            startButton.addEventListener(
+                "click",
+                async () => {
+
+                    if (sessionId || startButton.disabled) return;
+
+                    startButton.disabled = true;
+                    startButton.textContent = "STARTING SESSION...";
+
+                    status.textContent =
+                        "Creating your secure viewing session...";
+
+                    try {
+
+                        const { data, error } = await db.rpc(
+                            "start_ad_watch",
+                            {
+                                p_advertisement_id: ad.id
+                            }
+                        );
+
+                        if (error) throw error;
+
+                        if (
+                            !data ||
+                            data.success !== true ||
+                            !data.session_id
+                        ) {
+                            throw new Error(
+                                data?.message ||
+                                "Could not start viewing session."
+                            );
+                        }
+
+                        sessionId = data.session_id;
+
+                        startButton.hidden = true;
+
+                        video.style.display = "block";
+                        video.controls = true;
+
+                        video.load();
+
+                        status.textContent =
+                            "Viewing session started. Press PLAY to watch the advertisement.";
+
+                    } catch (error) {
+
+                        console.error(
+                            "Start advertisement error:",
+                            error
+                        );
+
+                        status.textContent =
+                            explainError(error);
+
+                        startButton.disabled = false;
+                        startButton.textContent = "TRY AGAIN";
+                    }
+
+                }
+            );
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Advertisement loading error:",
+            error
+        );
+
+        advertisementMessage.textContent =
+            "Could not load advertisements. Please refresh and try again.";
+    }
+}{
         if (!advertisementList || !advertisementMessage) return;
 
         advertisementList.replaceChildren();
