@@ -1,6 +1,7 @@
 // ========================================
 // MG WATCH & EARN
 // COMPLETE WEBSITE + ADMIN MANAGEMENT
+// REWARDS MANAGEMENT
 // DUPLICATE ADMIN PANEL FIX
 // ========================================
 
@@ -16,7 +17,6 @@ const SUPABASE_PUBLISHABLE_KEY =
 
 let db = null;
 
-// Prevent simultaneous admin panel creation
 let adminAccessCheckInProgress = false;
 
 try {
@@ -182,6 +182,20 @@ document.addEventListener("DOMContentLoaded", async function () {
         } catch {
             return null;
         }
+    }
+
+    function styleAdminButton(button, background = "#00e5a0") {
+
+        button.style.cssText = [
+            "background:" + background,
+            "color:#071321",
+            "padding:11px 15px",
+            "border:0",
+            "border-radius:6px",
+            "font-weight:bold",
+            "cursor:pointer",
+            "margin:5px"
+        ].join(";");
     }
 
     // ========================================
@@ -1093,8 +1107,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 statusButton.type = "button";
 
-                statusButton.style.cssText =
-                    "background:#00e5a0;color:#071321;padding:10px;border:0;border-radius:5px;cursor:pointer;font-weight:bold;";
+                styleAdminButton(statusButton);
 
                 statusButton.addEventListener(
                     "click",
@@ -1146,8 +1159,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 deleteButton.type = "button";
 
-                deleteButton.style.cssText =
-                    "background:#d93636;color:white;padding:10px;border:0;border-radius:5px;cursor:pointer;font-weight:bold;";
+                styleAdminButton(deleteButton, "#d93636");
+                deleteButton.style.color = "white";
 
                 deleteButton.addEventListener(
                     "click",
@@ -1316,14 +1329,345 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // ========================================
+    // ADMIN REWARDS MANAGEMENT
+    // ========================================
+
+    async function loadAdminRewards(panel) {
+
+        const list =
+            panel.querySelector("#mgAdminRewardsList");
+
+        const count =
+            panel.querySelector("#mgAdminRewardCount");
+
+        const refresh =
+            panel.querySelector("#mgRefreshRewards");
+
+        if (!list || !count || !refresh) return;
+
+        refresh.disabled = true;
+        refresh.textContent = "LOADING...";
+
+        list.replaceChildren();
+
+        createElement(
+            "p",
+            "Loading user rewards...",
+            list
+        );
+
+        try {
+
+            const { data, error } =
+                await db.rpc("admin_get_rewards");
+
+            if (error) throw error;
+
+            const rewards = data || [];
+
+            list.replaceChildren();
+
+            const pending = rewards.filter(
+                reward => reward.status === "pending"
+            ).length;
+
+            count.textContent =
+                "TOTAL REWARDS: " +
+                rewards.length +
+                " | PENDING: " +
+                pending;
+
+            if (rewards.length === 0) {
+
+                createElement(
+                    "p",
+                    "No user rewards found yet.",
+                    list
+                );
+
+                return;
+            }
+
+            rewards.forEach(reward => {
+
+                const card = createElement(
+                    "div",
+                    undefined,
+                    list
+                );
+
+                card.style.cssText = [
+                    "background:#102b48",
+                    "padding:16px",
+                    "margin:12px 0",
+                    "border-radius:9px",
+                    "border:1px solid #29445f"
+                ].join(";");
+
+                createElement(
+                    "h3",
+                    reward.user_email || "Unknown user",
+                    card
+                );
+
+                createElement(
+                    "p",
+                    "Advertisement: " +
+                    (reward.advertisement_title || "Unknown advertisement"),
+                    card
+                );
+
+                createElement(
+                    "p",
+                    "Reward amount: " +
+                    formatMoney(reward.amount, "USD"),
+                    card
+                );
+
+                createElement(
+                    "p",
+                    "Reward ID: " + reward.reward_id,
+                    card
+                );
+
+                createElement(
+                    "p",
+                    "Date: " +
+                    (
+                        reward.created_at
+                            ? new Date(reward.created_at).toLocaleString()
+                            : "Unknown"
+                    ),
+                    card
+                );
+
+                const status = createElement(
+                    "p",
+                    "STATUS: " +
+                    String(reward.status || "unknown").toUpperCase(),
+                    card
+                );
+
+                status.style.fontWeight = "bold";
+
+                if (reward.status === "pending") {
+                    status.style.color = "#ffcf70";
+                } else if (reward.status === "approved") {
+                    status.style.color = "#00e5a0";
+                } else {
+                    status.style.color = "#ff7777";
+                }
+
+                if (reward.status !== "pending") {
+
+                    createElement(
+                        "p",
+                        "This reward has already been processed.",
+                        card
+                    );
+
+                    return;
+                }
+
+                const buttonArea = createElement(
+                    "div",
+                    undefined,
+                    card
+                );
+
+                buttonArea.style.cssText =
+                    "display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;";
+
+                const approveButton = createElement(
+                    "button",
+                    "APPROVE & CREDIT WALLET",
+                    buttonArea
+                );
+
+                approveButton.type = "button";
+
+                styleAdminButton(approveButton);
+
+                const rejectButton = createElement(
+                    "button",
+                    "REJECT REWARD",
+                    buttonArea
+                );
+
+                rejectButton.type = "button";
+
+                styleAdminButton(rejectButton, "#d93636");
+                rejectButton.style.color = "white";
+
+                approveButton.addEventListener(
+                    "click",
+                    async () => {
+
+                        const amount = Number(reward.amount);
+
+                        if (
+                            !Number.isFinite(amount) ||
+                            amount < 0
+                        ) {
+
+                            showMessage(
+                                "Invalid reward amount. Approval cancelled."
+                            );
+
+                            return;
+                        }
+
+                        const confirmed = window.confirm(
+                            "Approve " +
+                            formatMoney(amount, "USD") +
+                            " for " +
+                            (reward.user_email || "this user") +
+                            "?\n\nThis will immediately credit their wallet."
+                        );
+
+                        if (!confirmed) return;
+
+                        approveButton.disabled = true;
+                        rejectButton.disabled = true;
+
+                        approveButton.textContent =
+                            "PROCESSING...";
+
+                        try {
+
+                            const { data, error } = await db.rpc(
+                                "admin_process_reward",
+                                {
+                                    p_reward_id: reward.reward_id,
+                                    p_decision: "approved"
+                                }
+                            );
+
+                            if (error) throw error;
+
+                            if (!data || data.success !== true) {
+                                throw new Error(
+                                    data?.message ||
+                                    "Reward approval was not confirmed."
+                                );
+                            }
+
+                            showMessage(
+                                "Reward approved and wallet credited: " +
+                                formatMoney(data.amount, "USD"),
+                                true
+                            );
+
+                            await loadAdminRewards(panel);
+
+                        } catch (error) {
+
+                            console.error(
+                                "Reward approval error:",
+                                error
+                            );
+
+                            showMessage(explainError(error));
+
+                            approveButton.disabled = false;
+                            rejectButton.disabled = false;
+
+                            approveButton.textContent =
+                                "APPROVE & CREDIT WALLET";
+                        }
+                    }
+                );
+
+                rejectButton.addEventListener(
+                    "click",
+                    async () => {
+
+                        const confirmed = window.confirm(
+                            "Are you sure you want to reject this reward?\n\nThe user's wallet will not be credited."
+                        );
+
+                        if (!confirmed) return;
+
+                        approveButton.disabled = true;
+                        rejectButton.disabled = true;
+
+                        rejectButton.textContent =
+                            "REJECTING...";
+
+                        try {
+
+                            const { data, error } = await db.rpc(
+                                "admin_process_reward",
+                                {
+                                    p_reward_id: reward.reward_id,
+                                    p_decision: "rejected"
+                                }
+                            );
+
+                            if (error) throw error;
+
+                            if (!data || data.success !== true) {
+                                throw new Error(
+                                    data?.message ||
+                                    "Reward rejection was not confirmed."
+                                );
+                            }
+
+                            showMessage(
+                                "Reward rejected. No wallet credit was issued.",
+                                true
+                            );
+
+                            await loadAdminRewards(panel);
+
+                        } catch (error) {
+
+                            console.error(
+                                "Reward rejection error:",
+                                error
+                            );
+
+                            showMessage(explainError(error));
+
+                            approveButton.disabled = false;
+                            rejectButton.disabled = false;
+
+                            rejectButton.textContent =
+                                "REJECT REWARD";
+                        }
+                    }
+                );
+            });
+
+        } catch (error) {
+
+            console.error(
+                "Admin rewards loading error:",
+                error
+            );
+
+            list.replaceChildren();
+
+            createElement(
+                "p",
+                "Could not load rewards: " +
+                (error.message || "Unknown error"),
+                list
+            );
+
+        } finally {
+
+            refresh.disabled = false;
+            refresh.textContent = "REFRESH REWARDS";
+        }
+    }
+
+    // ========================================
     // ADMIN DASHBOARD
     // DUPLICATE CREATION PROTECTION
     // ========================================
 
     async function checkAdminAccess(user) {
-
-        // If another admin check is already running,
-        // do not create another dashboard.
 
         if (adminAccessCheckInProgress) {
 
@@ -1349,8 +1693,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         try {
 
-            // Remove any accidental duplicate panels.
-
             const existingPanels =
                 document.querySelectorAll("#mgAdminPanel");
 
@@ -1363,8 +1705,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 }
 
             });
-
-            // Verify administrator access.
 
             const { data, error } =
                 await db.rpc("is_admin");
@@ -1379,8 +1719,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 return false;
             }
-
-            // Create panel only if one does not exist.
 
             if (!panel) {
 
@@ -1573,15 +1911,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 createButton.type = "submit";
 
-                createButton.style.cssText = [
-                    "background:#00e5a0",
-                    "color:#071321",
-                    "padding:14px 20px",
-                    "border:0",
-                    "border-radius:6px",
-                    "font-weight:bold",
-                    "cursor:pointer"
-                ].join(";");
+                styleAdminButton(createButton);
 
                 form.addEventListener("submit", event => {
 
@@ -1629,13 +1959,60 @@ document.addEventListener("DOMContentLoaded", async function () {
                     loadAdminAds(panel);
                 });
 
+                // REWARDS MANAGEMENT
+
+                createElement("hr", undefined, panel);
+
+                createElement(
+                    "h2",
+                    "💰 REWARDS MANAGEMENT",
+                    panel
+                );
+
+                createElement(
+                    "p",
+                    "Review user rewards and manage reward approvals.",
+                    panel
+                );
+
+                const rewardCount = createElement(
+                    "h3",
+                    "TOTAL REWARDS: Loading...",
+                    panel
+                );
+
+                rewardCount.id = "mgAdminRewardCount";
+
+                const rewardRefresh = createElement(
+                    "button",
+                    "REFRESH REWARDS",
+                    panel
+                );
+
+                rewardRefresh.id = "mgRefreshRewards";
+                rewardRefresh.type = "button";
+
+                styleAdminButton(rewardRefresh);
+
+                const rewardList = createElement(
+                    "div",
+                    undefined,
+                    panel
+                );
+
+                rewardList.id = "mgAdminRewardsList";
+
+                rewardRefresh.addEventListener("click", () => {
+                    loadAdminRewards(panel);
+                });
+
                 // SECURITY NOTICE
 
                 createElement("hr", undefined, panel);
 
                 const notice = createElement(
                     "p",
-                    "IMPORTANT: Advertisements currently receive zero automatic reward credit. Sponsor funding and verified reward processing must be implemented before payments are enabled.",
+                    "IMPORTANT: Only approve verified rewards covered by sponsor funding. Approval immediately credits the user's USD wallet. This does not send money to a bank account or mobile wallet.",
                     panel
                 );
 
@@ -1643,15 +2020,12 @@ document.addEventListener("DOMContentLoaded", async function () {
                     "color:#ffcf70;font-size:13px;";
             }
 
-            // Display the single admin panel.
-
             panel.hidden = false;
-
-            // Load admin information.
 
             await Promise.all([
                 loadAdminUsers(panel),
-                loadAdminAds(panel)
+                loadAdminAds(panel),
+                loadAdminRewards(panel)
             ]);
 
             return true;
@@ -1670,8 +2044,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             return false;
 
         } finally {
-
-            // Allow future refreshes and checks.
 
             adminAccessCheckInProgress = false;
         }
