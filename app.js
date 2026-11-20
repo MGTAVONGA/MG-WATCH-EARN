@@ -1940,6 +1940,197 @@ document.addEventListener("DOMContentLoaded", async function () {
         finally { button.disabled=false; }
     }
 
+
+    // ========================================
+    // ADMIN ADVERTISER MANAGEMENT
+    // ========================================
+
+    async function loadAdminAdvertisers(panel) {
+        const list = panel.querySelector("#mgAdminAdvertisersList");
+        const count = panel.querySelector("#mgAdminAdvertiserCount");
+        const refresh = panel.querySelector("#mgRefreshAdvertisers");
+        if (!list || !count || !refresh) return;
+
+        refresh.disabled = true;
+        refresh.textContent = "LOADING...";
+        list.replaceChildren();
+        createElement("p", "Loading advertiser applications...", list);
+
+        try {
+            const { data, error } = await db.rpc("admin_get_advertisers");
+            if (error) throw error;
+
+            const advertisers = data || [];
+            list.replaceChildren();
+            const pending = advertisers.filter(x => x.status === "pending").length;
+            count.textContent = `ADVERTISERS: ${advertisers.length} | PENDING: ${pending}`;
+
+            if (!advertisers.length) {
+                createElement("p", "No advertiser applications found.", list);
+                return;
+            }
+
+            advertisers.forEach(ad => {
+                const card = createElement("div", undefined, list);
+                card.style.cssText = "background:#102b48;padding:16px;margin:12px 0;border-radius:9px;border:1px solid #29445f;";
+                createElement("h3", ad.business_name || "Business", card);
+                createElement("p", "Contact: " + (ad.contact_email || ""), card);
+                createElement("p", "Phone: " + (ad.phone_number || "Not provided"), card);
+                createElement("p", "Description: " + (ad.business_description || "Not provided"), card);
+                createElement("p", "Applied: " + formatDate(ad.created_at), card);
+                const status = createElement("p", "STATUS: " + String(ad.status).toUpperCase(), card);
+                status.style.fontWeight = "bold";
+                status.style.color = ad.status === "approved" ? "#00e5a0" :
+                    ad.status === "pending" ? "#ffcf70" : "#ff7777";
+
+                const actions = createElement("div", undefined, card);
+                if (ad.status !== "approved") {
+                    const approve = createElement("button", "APPROVE", actions);
+                    approve.type = "button"; styleAdminButton(approve);
+                    approve.addEventListener("click", () => updateAdvertiserStatus(ad, "approved", panel));
+                }
+                if (ad.status !== "rejected") {
+                    const reject = createElement("button", "REJECT", actions);
+                    reject.type = "button"; styleAdminButton(reject, "#d93636"); reject.style.color = "white";
+                    reject.addEventListener("click", () => updateAdvertiserStatus(ad, "rejected", panel));
+                }
+                if (ad.status !== "suspended") {
+                    const suspend = createElement("button", "SUSPEND", actions);
+                    suspend.type = "button"; styleAdminButton(suspend, "#b7791f");
+                    suspend.addEventListener("click", () => updateAdvertiserStatus(ad, "suspended", panel));
+                }
+            });
+        } catch (error) {
+            list.replaceChildren();
+            createElement("p", "Could not load advertisers: " + (error.message || "Unknown error"), list);
+        } finally {
+            refresh.disabled = false;
+            refresh.textContent = "REFRESH ADVERTISERS";
+        }
+    }
+
+    async function updateAdvertiserStatus(ad, status, panel) {
+        if (!window.confirm("Set " + ad.business_name + " to " + status.toUpperCase() + "?")) return;
+        try {
+            const { data, error } = await db.rpc("admin_update_advertiser_status", {
+                p_profile_id: ad.profile_id,
+                p_status: status
+            });
+            if (error) throw error;
+            if (!data || data.success !== true) throw new Error(data?.message || "Status update failed.");
+            showMessage(data.message || "Advertiser status updated.", true);
+            await Promise.all([
+                loadAdminAdvertisers(panel),
+                loadAdminAdvertiserCampaigns(panel)
+            ]);
+        } catch (error) {
+            showMessage("Could not update advertiser: " + (error.message || "Unknown error"));
+        }
+    }
+
+    // ========================================
+    // ADMIN ADVERTISER CAMPAIGN REVIEW
+    // ========================================
+
+    async function loadAdminAdvertiserCampaigns(panel) {
+        const list = panel.querySelector("#mgAdminAdvertiserCampaignsList");
+        const count = panel.querySelector("#mgAdminAdvertiserCampaignCount");
+        const refresh = panel.querySelector("#mgRefreshAdvertiserCampaigns");
+        if (!list || !count || !refresh) return;
+
+        refresh.disabled = true;
+        refresh.textContent = "LOADING...";
+        list.replaceChildren();
+        createElement("p", "Loading submitted advertiser campaigns...", list);
+
+        try {
+            const { data, error } = await db.rpc("admin_get_advertiser_campaigns");
+            if (error) throw error;
+            const campaigns = data || [];
+            list.replaceChildren();
+            const pending = campaigns.filter(x => x.status === "pending").length;
+            count.textContent = `CAMPAIGNS: ${campaigns.length} | PENDING REVIEW: ${pending}`;
+
+            if (!campaigns.length) {
+                createElement("p", "No advertiser campaigns have been submitted.", list);
+                return;
+            }
+
+            campaigns.forEach(campaign => {
+                const card = createElement("div", undefined, list);
+                card.style.cssText = "background:#102b48;padding:16px;margin:12px 0;border-radius:9px;border:1px solid #29445f;";
+                createElement("h3", campaign.title || "Campaign", card);
+                createElement("p", "Business: " + (campaign.business_name || "Unknown"), card);
+                createElement("p", "Duration: " + campaign.duration_seconds + " seconds", card);
+                createElement("p", "Requested reward per completed view: " + formatMoney(campaign.requested_reward_amount, "USD"), card);
+                createElement("p", "Video: " + (campaign.video_url || ""), card);
+                if (campaign.description) createElement("p", campaign.description, card);
+                createElement("p", "Submitted: " + formatDate(campaign.created_at), card);
+                if (campaign.advertisement_id) createElement("p", "Advertisement ID: " + campaign.advertisement_id, card);
+                if (campaign.admin_notes) createElement("p", "Admin notes: " + campaign.admin_notes, card);
+
+                const status = createElement("p", "STATUS: " + String(campaign.status).toUpperCase(), card);
+                status.style.fontWeight = "bold";
+                status.style.color = campaign.status === "approved" ? "#00e5a0" :
+                    campaign.status === "pending" ? "#ffcf70" : "#ff7777";
+
+                const notes = document.createElement("textarea");
+                notes.placeholder = "Optional admin notes";
+                notes.maxLength = 1000;
+                notes.style.cssText = "width:100%;min-height:55px;padding:10px;box-sizing:border-box;margin:8px 0;";
+                card.appendChild(notes);
+
+                const actions = createElement("div", undefined, card);
+                if (campaign.status !== "approved") {
+                    const approve = createElement("button", "APPROVE (CREATES PAUSED AD)", actions);
+                    approve.type = "button"; styleAdminButton(approve);
+                    approve.addEventListener("click", () => reviewAdvertiserCampaign(campaign, "approved", notes.value, panel));
+                }
+                if (campaign.status !== "rejected") {
+                    const reject = createElement("button", "REJECT", actions);
+                    reject.type = "button"; styleAdminButton(reject, "#d93636"); reject.style.color = "white";
+                    reject.addEventListener("click", () => reviewAdvertiserCampaign(campaign, "rejected", notes.value, panel));
+                }
+                if (campaign.status !== "suspended") {
+                    const suspend = createElement("button", "SUSPEND", actions);
+                    suspend.type = "button"; styleAdminButton(suspend, "#b7791f");
+                    suspend.addEventListener("click", () => reviewAdvertiserCampaign(campaign, "suspended", notes.value, panel));
+                }
+            });
+        } catch (error) {
+            list.replaceChildren();
+            createElement("p", "Could not load advertiser campaigns: " + (error.message || "Unknown error"), list);
+        } finally {
+            refresh.disabled = false;
+            refresh.textContent = "REFRESH ADVERTISER CAMPAIGNS";
+        }
+    }
+
+    async function reviewAdvertiserCampaign(campaign, decision, notes, panel) {
+        const warning = decision === "approved"
+            ? "Approve this campaign? This creates its advertisement as PAUSED. It will not appear to viewers until it is separately activated after verified funding."
+            : "Set this campaign to " + decision.toUpperCase() + "?";
+        if (!window.confirm(warning)) return;
+
+        try {
+            const { data, error } = await db.rpc("admin_review_advertiser_campaign", {
+                p_campaign_id: campaign.campaign_id,
+                p_decision: decision,
+                p_admin_notes: notes || null
+            });
+            if (error) throw error;
+            if (!data || data.success !== true) throw new Error(data?.message || "Campaign review failed.");
+            showMessage(data.message || "Campaign reviewed.", true);
+            await Promise.all([
+                loadAdminAdvertiserCampaigns(panel),
+                loadAdminAds(panel),
+                loadAdminCampaignFunding(panel)
+            ]);
+        } catch (error) {
+            showMessage("Could not review campaign: " + (error.message || "Unknown error"));
+        }
+    }
+
     // ========================================
     // ADMIN DASHBOARD
     // ========================================
@@ -2144,6 +2335,37 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 adRefresh.addEventListener("click", () => loadAdminAds(panel));
 
+
+                // ADVERTISER APPLICATION MANAGEMENT
+
+                createElement("hr", undefined, panel);
+                createElement("h2", "🏢 ADVERTISER MANAGEMENT", panel);
+                createElement("p", "Review business applications and approve, reject or suspend advertisers.", panel);
+                const advertiserCount = createElement("h3", "ADVERTISERS: Loading...", panel);
+                advertiserCount.id = "mgAdminAdvertiserCount";
+                const advertiserRefresh = createElement("button", "REFRESH ADVERTISERS", panel);
+                advertiserRefresh.id = "mgRefreshAdvertisers";
+                advertiserRefresh.type = "button";
+                styleAdminButton(advertiserRefresh);
+                const advertiserList = createElement("div", undefined, panel);
+                advertiserList.id = "mgAdminAdvertisersList";
+                advertiserRefresh.addEventListener("click", () => loadAdminAdvertisers(panel));
+
+                // ADVERTISER CAMPAIGN REVIEW
+
+                createElement("hr", undefined, panel);
+                createElement("h2", "🎯 ADVERTISER CAMPAIGN REVIEW", panel);
+                createElement("p", "Review submitted campaigns. Approval creates a paused advertisement; funding and activation are separate steps.", panel);
+                const advertiserCampaignCount = createElement("h3", "CAMPAIGNS: Loading...", panel);
+                advertiserCampaignCount.id = "mgAdminAdvertiserCampaignCount";
+                const advertiserCampaignRefresh = createElement("button", "REFRESH ADVERTISER CAMPAIGNS", panel);
+                advertiserCampaignRefresh.id = "mgRefreshAdvertiserCampaigns";
+                advertiserCampaignRefresh.type = "button";
+                styleAdminButton(advertiserCampaignRefresh);
+                const advertiserCampaignList = createElement("div", undefined, panel);
+                advertiserCampaignList.id = "mgAdminAdvertiserCampaignsList";
+                advertiserCampaignRefresh.addEventListener("click", () => loadAdminAdvertiserCampaigns(panel));
+
                 // REWARDS MANAGEMENT
 
                 createElement("hr", undefined, panel);
@@ -2295,6 +2517,8 @@ document.addEventListener("DOMContentLoaded", async function () {
             await Promise.all([
                 loadAdminUsers(panel),
                 loadAdminAds(panel),
+                loadAdminAdvertisers(panel),
+                loadAdminAdvertiserCampaigns(panel),
                 loadAdminRewards(panel),
                 loadAdminWallets(panel),
                 loadAdminTransactions(panel),
