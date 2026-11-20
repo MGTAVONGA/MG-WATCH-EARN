@@ -1,7 +1,7 @@
 // ========================================
 // MG WATCH & EARN
 // COMPLETE WEBSITE + ADMIN MANAGEMENT
-// USER, ADS, REWARDS, WALLETS & TRANSACTIONS
+// STAGE 8: USER REWARDS & WATCH HISTORY
 // ========================================
 
 // ========================================
@@ -44,23 +44,12 @@ try {
 
 document.addEventListener("DOMContentLoaded", async function () {
 
-    const registerForm =
-        document.getElementById("registerForm");
-
-    const loginForm =
-        document.getElementById("loginForm");
-
-    const logoutButton =
-        document.getElementById("logoutButton");
-
-    const message =
-        document.getElementById("authMessage");
-
-    const dashboard =
-        document.getElementById("userDashboard");
-
-    const userEmail =
-        document.getElementById("userEmail");
+    const registerForm = document.getElementById("registerForm");
+    const loginForm = document.getElementById("loginForm");
+    const logoutButton = document.getElementById("logoutButton");
+    const message = document.getElementById("authMessage");
+    const dashboard = document.getElementById("userDashboard");
+    const userEmail = document.getElementById("userEmail");
 
     const advertisementList =
         document.getElementById("advertisementList");
@@ -84,15 +73,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     function showMessage(text, success = false) {
-
         message.textContent = text;
-
         message.style.color =
             success ? "#00e5a0" : "#ff7777";
     }
 
     function explainError(error) {
-
         console.error(error);
 
         const text = error?.message || String(error);
@@ -118,7 +104,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     function setLoading(form, loading) {
-
         const button =
             form.querySelector('button[type="submit"]');
 
@@ -136,7 +121,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     function createElement(tag, text, parent) {
-
         const element = document.createElement(tag);
 
         if (text !== undefined && text !== null) {
@@ -151,30 +135,24 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     function formatMoney(amount, currency = "USD") {
-
         const value = Number(amount);
 
         if (!Number.isFinite(value)) return "$0.00";
 
         try {
-
             return new Intl.NumberFormat("en-US", {
                 style: "currency",
                 currency
             }).format(value);
-
         } catch {
-
             return "$" + value.toFixed(2);
         }
     }
 
     function safeVideoURL(value) {
-
         if (!value) return null;
 
         try {
-
             const url = new URL(value);
 
             return url.protocol === "https:"
@@ -182,16 +160,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                 : null;
 
         } catch {
-
             return null;
         }
     }
 
-    function styleAdminButton(
-        button,
-        background = "#00e5a0"
-    ) {
-
+    function styleAdminButton(button, background = "#00e5a0") {
         button.style.cssText = [
             "background:" + background,
             "color:#071321",
@@ -205,67 +178,31 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     function createAdminTable(parent, headings) {
-
-        const wrapper = createElement(
-            "div",
-            undefined,
-            parent
-        );
-
+        const wrapper = createElement("div", undefined, parent);
         wrapper.style.overflowX = "auto";
 
-        const table = createElement(
-            "table",
-            undefined,
-            wrapper
-        );
+        const table = createElement("table", undefined, wrapper);
 
         table.style.cssText =
             "width:100%;border-collapse:collapse;color:white;";
 
-        const thead = createElement(
-            "thead",
-            undefined,
-            table
-        );
-
-        const headerRow = createElement(
-            "tr",
-            undefined,
-            thead
-        );
+        const thead = createElement("thead", undefined, table);
+        const headerRow = createElement("tr", undefined, thead);
 
         headings.forEach(label => {
-
-            const th = createElement(
-                "th",
-                label,
-                headerRow
-            );
+            const th = createElement("th", label, headerRow);
 
             th.style.cssText =
                 "padding:10px;text-align:left;border-bottom:1px solid #00e5a0;white-space:nowrap;";
         });
 
-        const tbody = createElement(
-            "tbody",
-            undefined,
-            table
-        );
-
-        return tbody;
+        return createElement("tbody", undefined, table);
     }
 
     function addAdminTableRow(tbody, values) {
-
-        const row = createElement(
-            "tr",
-            undefined,
-            tbody
-        );
+        const row = createElement("tr", undefined, tbody);
 
         values.forEach(value => {
-
             const cell = createElement(
                 "td",
                 value === null || value === undefined
@@ -279,6 +216,16 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
 
         return row;
+    }
+
+    function formatDate(value) {
+        if (!value) return "Unknown";
+
+        const date = new Date(value);
+
+        return Number.isNaN(date.getTime())
+            ? "Unknown"
+            : date.toLocaleString();
     }
 
     // ========================================
@@ -306,20 +253,22 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     function showLoginForms() {
-
         dashboard.hidden = true;
 
         registerForm.hidden = false;
         loginForm.hidden = false;
 
-        const panel =
-            document.getElementById("mgAdminPanel");
+        const panel = document.getElementById("mgAdminPanel");
 
         if (panel) panel.hidden = true;
+
+        const userPanel =
+            document.getElementById("mgUserActivityPanel");
+
+        if (userPanel) userPanel.hidden = true;
     }
 
     function showDashboard(user) {
-
         dashboard.hidden = false;
 
         registerForm.hidden = true;
@@ -331,7 +280,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
 
         if (totalEarningsElement) {
-            totalEarningsElement.textContent = "$0.00";
+            totalEarningsElement.textContent = "Loading...";
         }
 
         if (availableBalanceElement) {
@@ -339,11 +288,11 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
 
         if (videosWatchedElement) {
-            videosWatchedElement.textContent = "0";
+            videosWatchedElement.textContent = "Loading...";
         }
 
         if (rewardsElement) {
-            rewardsElement.textContent = "$0.00";
+            rewardsElement.textContent = "Loading...";
         }
     }
 
@@ -352,9 +301,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     async function loadWallet(user) {
-
         try {
-
             const { data, error } = await db
                 .from("user_wallets")
                 .select("balance, currency")
@@ -364,12 +311,10 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (error) throw error;
 
             if (!data) {
-
                 if (availableBalanceElement) {
                     availableBalanceElement.textContent =
                         "Unavailable";
                 }
-
                 return;
             }
 
@@ -380,16 +325,11 @@ document.addEventListener("DOMContentLoaded", async function () {
             }
 
             if (availableBalanceElement) {
-
                 availableBalanceElement.textContent =
-                    formatMoney(
-                        balance,
-                        data.currency || "USD"
-                    );
+                    formatMoney(balance, data.currency || "USD");
             }
 
         } catch (error) {
-
             console.error("Wallet error:", error);
 
             if (availableBalanceElement) {
@@ -400,11 +340,569 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // ========================================
+    // USER ACTIVITY PANEL
+    // ========================================
+
+    function createUserActivityPanel() {
+        const existing =
+            document.getElementById("mgUserActivityPanel");
+
+        if (existing) return existing;
+
+        const container =
+            dashboard.querySelector(".dashboard-container");
+
+        if (!container) {
+            console.error("Dashboard container not found.");
+            return null;
+        }
+
+        const panel = createElement(
+            "section",
+            undefined,
+            container
+        );
+
+        panel.id = "mgUserActivityPanel";
+
+        panel.style.cssText = [
+            "background:#101d35",
+            "border:1px solid #00e5a0",
+            "border-radius:14px",
+            "padding:20px",
+            "margin:25px 0",
+            "color:white"
+        ].join(";");
+
+        // MY REWARDS
+
+        createElement("hr", undefined, panel);
+
+        createElement(
+            "h2",
+            "💰 MY REWARDS",
+            panel
+        );
+
+        createElement(
+            "p",
+            "Track your pending, approved and rejected rewards.",
+            panel
+        );
+
+        const rewardSummary = createElement(
+            "h3",
+            "Loading rewards...",
+            panel
+        );
+
+        rewardSummary.id = "mgMyRewardSummary";
+
+        const rewardRefresh = createElement(
+            "button",
+            "REFRESH MY REWARDS",
+            panel
+        );
+
+        rewardRefresh.type = "button";
+        styleAdminButton(rewardRefresh);
+
+        const rewardList = createElement(
+            "div",
+            undefined,
+            panel
+        );
+
+        rewardList.id = "mgMyRewardsList";
+
+        rewardRefresh.addEventListener("click", () => {
+            if (currentUser) loadUserActivity(currentUser);
+        });
+
+        // WATCH HISTORY
+
+        createElement("hr", undefined, panel);
+
+        createElement(
+            "h2",
+            "🎬 MY WATCH HISTORY",
+            panel
+        );
+
+        createElement(
+            "p",
+            "See the advertisements you have completed.",
+            panel
+        );
+
+        const historySummary = createElement(
+            "h3",
+            "Loading watch history...",
+            panel
+        );
+
+        historySummary.id = "mgMyHistorySummary";
+
+        const historyList = createElement(
+            "div",
+            undefined,
+            panel
+        );
+
+        historyList.id = "mgMyWatchHistory";
+
+        // MY TRANSACTIONS
+
+        createElement("hr", undefined, panel);
+
+        createElement(
+            "h2",
+            "📊 MY TRANSACTIONS",
+            panel
+        );
+
+        createElement(
+            "p",
+            "View wallet credits and debits.",
+            panel
+        );
+
+        const transactionSummary = createElement(
+            "h3",
+            "Loading transactions...",
+            panel
+        );
+
+        transactionSummary.id = "mgMyTransactionSummary";
+
+        const transactionRefresh = createElement(
+            "button",
+            "REFRESH MY TRANSACTIONS",
+            panel
+        );
+
+        transactionRefresh.type = "button";
+        styleAdminButton(transactionRefresh);
+
+        const transactionList = createElement(
+            "div",
+            undefined,
+            panel
+        );
+
+        transactionList.id = "mgMyTransactions";
+
+        transactionRefresh.addEventListener("click", () => {
+            if (currentUser) loadUserActivity(currentUser);
+        });
+
+        return panel;
+    }
+
+    let currentUser = null;
+
+    // ========================================
+    // LOAD USER ACTIVITY
+    // ========================================
+
+    async function loadUserActivity(user) {
+        if (!user || !user.id) return;
+
+        const panel = createUserActivityPanel();
+
+        if (!panel) return;
+
+        panel.hidden = false;
+
+        const rewardList =
+            panel.querySelector("#mgMyRewardsList");
+
+        const rewardSummary =
+            panel.querySelector("#mgMyRewardSummary");
+
+        const historyList =
+            panel.querySelector("#mgMyWatchHistory");
+
+        const historySummary =
+            panel.querySelector("#mgMyHistorySummary");
+
+        const transactionList =
+            panel.querySelector("#mgMyTransactions");
+
+        const transactionSummary =
+            panel.querySelector("#mgMyTransactionSummary");
+
+        rewardList.replaceChildren();
+        historyList.replaceChildren();
+        transactionList.replaceChildren();
+
+        createElement("p", "Loading rewards...", rewardList);
+        createElement("p", "Loading watch history...", historyList);
+        createElement("p", "Loading transactions...", transactionList);
+
+        try {
+            const [
+                rewardsResult,
+                historyResult,
+                transactionsResult
+            ] = await Promise.all([
+                db.from("user_rewards")
+                    .select("id, advertisement_id, amount, status, created_at")
+                    .eq("user_id", user.id)
+                    .order("created_at", { ascending: false }),
+
+                db.from("ad_watch_history")
+                    .select("id, advertisement_id, completed, watched_seconds, reward_amount, created_at")
+                    .eq("user_id", user.id)
+                    .order("created_at", { ascending: false }),
+
+                db.from("wallet_transactions")
+                    .select("id, amount, transaction_type, description, created_at")
+                    .eq("user_id", user.id)
+                    .order("created_at", { ascending: false })
+            ]);
+
+            if (rewardsResult.error) throw rewardsResult.error;
+            if (historyResult.error) throw historyResult.error;
+            if (transactionsResult.error) {
+                throw transactionsResult.error;
+            }
+
+            const rewards = rewardsResult.data || [];
+            const history = historyResult.data || [];
+            const transactions = transactionsResult.data || [];
+
+            // GET ADVERTISEMENT TITLES
+
+            const adIds = [
+                ...new Set([
+                    ...rewards.map(item => item.advertisement_id),
+                    ...history.map(item => item.advertisement_id)
+                ].filter(Boolean))
+            ];
+
+            let adTitles = {};
+
+            if (adIds.length > 0) {
+                const { data: ads, error: adsError } = await db
+                    .from("advertisements")
+                    .select("id, title")
+                    .in("id", adIds);
+
+                if (!adsError && ads) {
+                    ads.forEach(ad => {
+                        adTitles[ad.id] = ad.title;
+                    });
+                }
+            }
+
+            function getAdTitle(id) {
+                return adTitles[id] || "Advertisement";
+            }
+
+            // ========================================
+            // REWARD SUMMARY
+            // ========================================
+
+            const pending = rewards.filter(
+                item => item.status === "pending"
+            );
+
+            const approved = rewards.filter(
+                item => item.status === "approved"
+            );
+
+            const rejected = rewards.filter(
+                item => item.status === "rejected"
+            );
+
+            const approvedTotal = approved.reduce(
+                (sum, item) => sum + Number(item.amount || 0),
+                0
+            );
+
+            const pendingTotal = pending.reduce(
+                (sum, item) => sum + Number(item.amount || 0),
+                0
+            );
+
+            rewardSummary.textContent =
+                "TOTAL: " + rewards.length +
+                " | PENDING: " + pending.length +
+                " (" + formatMoney(pendingTotal) + ")" +
+                " | APPROVED: " + approved.length +
+                " (" + formatMoney(approvedTotal) + ")" +
+                " | REJECTED: " + rejected.length;
+
+            if (totalEarningsElement) {
+                totalEarningsElement.textContent =
+                    formatMoney(approvedTotal);
+            }
+
+            if (rewardsElement) {
+                rewardsElement.textContent =
+                    formatMoney(approvedTotal);
+            }
+
+            rewardList.replaceChildren();
+
+            if (rewards.length === 0) {
+                createElement(
+                    "p",
+                    "You do not have any rewards yet. Complete sponsored advertisements to start earning eligible rewards.",
+                    rewardList
+                );
+            } else {
+                rewards.forEach(reward => {
+                    const card = createElement(
+                        "div",
+                        undefined,
+                        rewardList
+                    );
+
+                    card.style.cssText = [
+                        "background:#102b48",
+                        "padding:14px",
+                        "margin:10px 0",
+                        "border-radius:8px",
+                        "border:1px solid #29445f"
+                    ].join(";");
+
+                    createElement(
+                        "h3",
+                        getAdTitle(reward.advertisement_id),
+                        card
+                    );
+
+                    createElement(
+                        "p",
+                        "Amount: " +
+                        formatMoney(reward.amount),
+                        card
+                    );
+
+                    createElement(
+                        "p",
+                        "Date: " + formatDate(reward.created_at),
+                        card
+                    );
+
+                    const status = createElement(
+                        "p",
+                        "STATUS: " +
+                        String(reward.status || "unknown").toUpperCase(),
+                        card
+                    );
+
+                    status.style.fontWeight = "bold";
+
+                    if (reward.status === "approved") {
+                        status.style.color = "#00e5a0";
+                    } else if (reward.status === "pending") {
+                        status.style.color = "#ffcf70";
+                    } else {
+                        status.style.color = "#ff7777";
+                    }
+                });
+            }
+
+            // ========================================
+            // WATCH HISTORY
+            // ========================================
+
+            const completedHistory = history.filter(
+                item => item.completed === true
+            );
+
+            historySummary.textContent =
+                "TOTAL WATCH RECORDS: " +
+                history.length +
+                " | COMPLETED: " +
+                completedHistory.length;
+
+            if (videosWatchedElement) {
+                videosWatchedElement.textContent =
+                    String(completedHistory.length);
+            }
+
+            historyList.replaceChildren();
+
+            if (history.length === 0) {
+                createElement(
+                    "p",
+                    "You have not completed any sponsored advertisements yet.",
+                    historyList
+                );
+            } else {
+                history.forEach(item => {
+                    const card = createElement(
+                        "div",
+                        undefined,
+                        historyList
+                    );
+
+                    card.style.cssText = [
+                        "background:#102b48",
+                        "padding:14px",
+                        "margin:10px 0",
+                        "border-radius:8px",
+                        "border:1px solid #29445f"
+                    ].join(";");
+
+                    createElement(
+                        "h3",
+                        getAdTitle(item.advertisement_id),
+                        card
+                    );
+
+                    createElement(
+                        "p",
+                        "Watched: " +
+                        Number(item.watched_seconds || 0) +
+                        " seconds",
+                        card
+                    );
+
+                    createElement(
+                        "p",
+                        "Recorded reward: " +
+                        formatMoney(item.reward_amount || 0),
+                        card
+                    );
+
+                    createElement(
+                        "p",
+                        "Date: " + formatDate(item.created_at),
+                        card
+                    );
+
+                    const completion = createElement(
+                        "p",
+                        item.completed
+                            ? "COMPLETED"
+                            : "NOT COMPLETED",
+                        card
+                    );
+
+                    completion.style.color =
+                        item.completed ? "#00e5a0" : "#ffcf70";
+                });
+            }
+
+            // ========================================
+            // TRANSACTIONS
+            // ========================================
+
+            const credits = transactions.filter(
+                item =>
+                    String(item.transaction_type).toLowerCase() === "credit"
+            );
+
+            const debits = transactions.filter(
+                item =>
+                    String(item.transaction_type).toLowerCase() === "debit"
+            );
+
+            transactionSummary.textContent =
+                "TOTAL TRANSACTIONS: " +
+                transactions.length +
+                " | CREDITS: " +
+                credits.length +
+                " | DEBITS: " +
+                debits.length;
+
+            transactionList.replaceChildren();
+
+            if (transactions.length === 0) {
+                createElement(
+                    "p",
+                    "No wallet transactions found yet.",
+                    transactionList
+                );
+            } else {
+                transactions.forEach(transaction => {
+                    const card = createElement(
+                        "div",
+                        undefined,
+                        transactionList
+                    );
+
+                    card.style.cssText = [
+                        "background:#102b48",
+                        "padding:14px",
+                        "margin:10px 0",
+                        "border-radius:8px",
+                        "border:1px solid #29445f"
+                    ].join(";");
+
+                    const type = String(
+                        transaction.transaction_type || "unknown"
+                    ).toLowerCase();
+
+                    const amount = createElement(
+                        "h3",
+                        (type === "credit" ? "+ " : type === "debit" ? "- " : "") +
+                        formatMoney(transaction.amount),
+                        card
+                    );
+
+                    amount.style.color =
+                        type === "credit"
+                            ? "#00e5a0"
+                            : type === "debit"
+                                ? "#ff7777"
+                                : "white";
+
+                    createElement(
+                        "p",
+                        "Type: " + type.toUpperCase(),
+                        card
+                    );
+
+                    createElement(
+                        "p",
+                        "Description: " +
+                        (transaction.description || "Wallet transaction"),
+                        card
+                    );
+
+                    createElement(
+                        "p",
+                        "Date: " + formatDate(transaction.created_at),
+                        card
+                    );
+                });
+            }
+
+        } catch (error) {
+            console.error("User activity error:", error);
+
+            rewardSummary.textContent =
+                "Could not load reward information.";
+
+            historySummary.textContent =
+                "Could not load watch history.";
+
+            transactionSummary.textContent =
+                "Could not load transactions.";
+
+            rewardList.replaceChildren();
+            historyList.replaceChildren();
+            transactionList.replaceChildren();
+
+            createElement(
+                "p",
+                explainError(error),
+                rewardList
+            );
+        }
+    }
+
+    // ========================================
     // USER ADVERTISEMENTS
     // ========================================
 
     async function loadAdvertisements() {
-
         if (!advertisementList || !advertisementMessage) return;
 
         advertisementList.replaceChildren();
@@ -413,7 +911,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             "Loading sponsored advertisements...";
 
         try {
-
             const { data, error } = await db
                 .from("advertisements")
                 .select(`
@@ -431,17 +928,13 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (error) throw error;
 
             if (!data || data.length === 0) {
-
                 advertisementMessage.textContent =
                     "No sponsored advertisements are available right now. Please check again later.";
-
                 return;
             }
 
             const uniqueAds = [
-                ...new Map(
-                    data.map(ad => [ad.id, ad])
-                ).values()
+                ...new Map(data.map(ad => [ad.id, ad])).values()
             ];
 
             advertisementMessage.textContent =
@@ -449,7 +942,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 " sponsored campaign(s) available.";
 
             uniqueAds.forEach(ad => {
-
                 const card = createElement(
                     "div",
                     undefined,
@@ -485,21 +977,18 @@ document.addEventListener("DOMContentLoaded", async function () {
                 createElement(
                     "p",
                     "Required viewing time: " +
-                    duration +
-                    " seconds",
+                    duration + " seconds",
                     card
                 );
 
                 const videoURL = safeVideoURL(ad.video_url);
 
                 if (!videoURL) {
-
                     createElement(
                         "p",
                         "This advertisement does not have a valid HTTPS video link.",
                         card
                     );
-
                     return;
                 }
 
@@ -576,22 +1065,15 @@ document.addEventListener("DOMContentLoaded", async function () {
                 video.playbackRate = 1;
 
                 function updateProgress() {
-
                     timerLabel.textContent =
                         "Time watched: " +
                         Math.floor(watched) +
-                        " / " +
-                        duration +
-                        " seconds";
+                        " / " + duration + " seconds";
 
-                    progress.value = Math.min(
-                        duration,
-                        watched
-                    );
+                    progress.value = Math.min(duration, watched);
                 }
 
                 function stopTimer() {
-
                     if (timer !== null) {
                         clearInterval(timer);
                         timer = null;
@@ -599,17 +1081,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                 }
 
                 async function finishViewing() {
-
-                    if (
-                        !sessionId ||
-                        completed ||
-                        finishing
-                    ) {
+                    if (!sessionId || completed || finishing) {
                         return;
                     }
 
                     finishing = true;
-
                     stopTimer();
                     video.pause();
 
@@ -619,7 +1095,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     retryButton.hidden = true;
 
                     try {
-
                         const { data, error } = await db.rpc(
                             "finish_ad_watch",
                             {
@@ -630,7 +1105,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                         if (error) throw error;
 
                         if (data && data.success === true) {
-
                             completed = true;
                             finishing = false;
 
@@ -642,6 +1116,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                                     ? "Advertisement completed successfully. Your reward is PENDING ADMIN APPROVAL."
                                     : "Advertisement completed successfully. No monetary reward was issued.";
 
+                            if (currentUser) {
+                                loadUserActivity(currentUser);
+                                loadWallet(currentUser);
+                            }
+
                             return;
                         }
 
@@ -649,7 +1128,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                             data &&
                             Number(data.seconds_remaining) > 0
                         ) {
-
                             const remaining = Math.ceil(
                                 Number(data.seconds_remaining)
                             );
@@ -678,22 +1156,16 @@ document.addEventListener("DOMContentLoaded", async function () {
                             data?.message &&
                             data.message.toLowerCase().includes("already completed")
                         ) {
-
                             completed = true;
                             startButton.disabled = true;
                             startButton.textContent = "COMPLETED";
-
                             return;
                         }
 
                         retryButton.hidden = false;
 
                     } catch (error) {
-
-                        console.error(
-                            "Finish advertisement error:",
-                            error
-                        );
+                        console.error("Finish advertisement error:", error);
 
                         finishing = false;
 
@@ -710,13 +1182,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                 );
 
                 function startTimer() {
-
                     if (timer !== null || completed) return;
 
                     lastTime = video.currentTime;
 
                     timer = setInterval(() => {
-
                         if (
                             document.visibilityState !== "visible" ||
                             video.paused ||
@@ -726,15 +1196,12 @@ document.addEventListener("DOMContentLoaded", async function () {
                         }
 
                         const currentTime = video.currentTime;
-
-                        const difference =
-                            currentTime - lastTime;
+                        const difference = currentTime - lastTime;
 
                         if (
                             difference > 0 &&
                             difference <= 1.5
                         ) {
-
                             watched = Math.min(
                                 duration,
                                 watched + difference
@@ -746,11 +1213,8 @@ document.addEventListener("DOMContentLoaded", async function () {
                         lastTime = currentTime;
 
                         if (watched >= duration) {
-
                             watched = duration;
-
                             updateProgress();
-
                             finishViewing();
                         }
 
@@ -758,9 +1222,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                 }
 
                 video.addEventListener("playing", () => {
-
                     if (!completed) {
-
                         status.textContent =
                             "Advertisement playing. Please keep watching.";
 
@@ -769,28 +1231,21 @@ document.addEventListener("DOMContentLoaded", async function () {
                 });
 
                 video.addEventListener("pause", () => {
-
                     stopTimer();
 
                     if (!completed && !finishing) {
-
                         status.textContent =
                             "Video paused. Resume to continue.";
                     }
                 });
 
                 video.addEventListener("ended", () => {
-
                     stopTimer();
 
                     if (!completed && !finishing) {
-
                         if (watched >= duration) {
-
                             finishViewing();
-
                         } else {
-
                             lastTime = 0;
                             video.currentTime = 0;
 
@@ -801,13 +1256,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                 });
 
                 video.addEventListener("seeking", () => {
-
                     if (
                         sessionId &&
                         !completed &&
                         Math.abs(video.currentTime - lastTime) > 1.5
                     ) {
-
                         video.currentTime = lastTime;
 
                         status.textContent =
@@ -816,92 +1269,66 @@ document.addEventListener("DOMContentLoaded", async function () {
                 });
 
                 video.addEventListener("ratechange", () => {
-
                     if (video.playbackRate !== 1) {
                         video.playbackRate = 1;
                     }
                 });
 
-                startButton.addEventListener(
-                    "click",
-                    async () => {
+                startButton.addEventListener("click", async () => {
+                    if (sessionId || startButton.disabled) return;
+
+                    startButton.disabled = true;
+                    startButton.textContent = "STARTING SESSION...";
+
+                    status.textContent =
+                        "Creating your secure viewing session...";
+
+                    try {
+                        const { data, error } = await db.rpc(
+                            "start_ad_watch",
+                            {
+                                p_advertisement_id: ad.id
+                            }
+                        );
+
+                        if (error) throw error;
 
                         if (
-                            sessionId ||
-                            startButton.disabled
+                            !data ||
+                            data.success !== true ||
+                            !data.session_id
                         ) {
-                            return;
+                            throw new Error(
+                                data?.message ||
+                                "Could not start viewing session."
+                            );
                         }
 
-                        startButton.disabled = true;
+                        sessionId = data.session_id;
 
-                        startButton.textContent =
-                            "STARTING SESSION...";
+                        startButton.hidden = true;
+
+                        video.style.display = "block";
+                        video.controls = true;
+
+                        video.load();
 
                         status.textContent =
-                            "Creating your secure viewing session...";
+                            "Viewing session started. Press PLAY to watch the advertisement.";
 
-                        try {
+                    } catch (error) {
+                        console.error("Start advertisement error:", error);
 
-                            const { data, error } = await db.rpc(
-                                "start_ad_watch",
-                                {
-                                    p_advertisement_id: ad.id
-                                }
-                            );
+                        status.textContent = explainError(error);
 
-                            if (error) throw error;
-
-                            if (
-                                !data ||
-                                data.success !== true ||
-                                !data.session_id
-                            ) {
-
-                                throw new Error(
-                                    data?.message ||
-                                    "Could not start viewing session."
-                                );
-                            }
-
-                            sessionId = data.session_id;
-
-                            startButton.hidden = true;
-
-                            video.style.display = "block";
-                            video.controls = true;
-
-                            video.load();
-
-                            status.textContent =
-                                "Viewing session started. Press PLAY to watch the advertisement.";
-
-                        } catch (error) {
-
-                            console.error(
-                                "Start advertisement error:",
-                                error
-                            );
-
-                            status.textContent =
-                                explainError(error);
-
-                            startButton.disabled = false;
-
-                            startButton.textContent =
-                                "TRY AGAIN";
-                        }
+                        startButton.disabled = false;
+                        startButton.textContent = "TRY AGAIN";
                     }
-                );
-
+                });
             });
 
         } catch (error) {
-
-            console.error(
-                "Advertisement loading error:",
-                error
-            );
+            console.error("Advertisement loading error:", error);
 
             advertisementMessage.textContent =
                 "Could not load advertisements. Please refresh and try again.";
@@ -913,15 +1340,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     async function loadAdminUsers(panel) {
-
-        const list =
-            panel.querySelector("#mgAdminUsersList");
-
-        const count =
-            panel.querySelector("#mgAdminUserCount");
-
-        const refresh =
-            panel.querySelector("#mgRefreshUsers");
+        const list = panel.querySelector("#mgAdminUsersList");
+        const count = panel.querySelector("#mgAdminUserCount");
+        const refresh = panel.querySelector("#mgRefreshUsers");
 
         if (!list || !count || !refresh) return;
 
@@ -930,14 +1351,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         list.replaceChildren();
 
-        createElement(
-            "p",
-            "Loading registered users...",
-            list
-        );
+        createElement("p", "Loading registered users...", list);
 
         try {
-
             const { data, error } =
                 await db.rpc("admin_get_users");
 
@@ -951,49 +1367,29 @@ document.addEventListener("DOMContentLoaded", async function () {
                 "TOTAL REGISTERED USERS: " + users.length;
 
             if (users.length === 0) {
-
-                createElement(
-                    "p",
-                    "No registered users found.",
-                    list
-                );
-
+                createElement("p", "No registered users found.", list);
                 return;
             }
 
             const tbody = createAdminTable(
                 list,
-                [
-                    "Email",
-                    "Registration date",
-                    "Last sign-in"
-                ]
+                ["Email", "Registration date", "Last sign-in"]
             );
 
             users.forEach(user => {
-
-                addAdminTableRow(
-                    tbody,
-                    [
-                        user.email || "No email",
-
-                        user.created_at
-                            ? new Date(user.created_at).toLocaleDateString()
-                            : "Unknown",
-
-                        user.last_sign_in_at
-                            ? new Date(user.last_sign_in_at).toLocaleString()
-                            : "Never"
-                    ]
-                );
+                addAdminTableRow(tbody, [
+                    user.email || "No email",
+                    user.created_at
+                        ? new Date(user.created_at).toLocaleDateString()
+                        : "Unknown",
+                    user.last_sign_in_at
+                        ? new Date(user.last_sign_in_at).toLocaleString()
+                        : "Never"
+                ]);
             });
 
         } catch (error) {
-
-            console.error(
-                "Admin user loading error:",
-                error
-            );
+            console.error("Admin user loading error:", error);
 
             list.replaceChildren();
 
@@ -1005,7 +1401,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             );
 
         } finally {
-
             refresh.disabled = false;
             refresh.textContent = "REFRESH USER LIST";
         }
@@ -1016,15 +1411,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     async function loadAdminAds(panel) {
-
-        const list =
-            panel.querySelector("#mgAdminAdsList");
-
-        const count =
-            panel.querySelector("#mgAdminAdCount");
-
-        const refresh =
-            panel.querySelector("#mgRefreshAds");
+        const list = panel.querySelector("#mgAdminAdsList");
+        const count = panel.querySelector("#mgAdminAdCount");
+        const refresh = panel.querySelector("#mgRefreshAds");
 
         if (!list || !count || !refresh) return;
 
@@ -1033,14 +1422,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         list.replaceChildren();
 
-        createElement(
-            "p",
-            "Loading advertisements...",
-            list
-        );
+        createElement("p", "Loading advertisements...", list);
 
         try {
-
             const { data, error } =
                 await db.rpc("admin_get_ads");
 
@@ -1054,23 +1438,16 @@ document.addEventListener("DOMContentLoaded", async function () {
                 "TOTAL ADVERTISEMENTS: " + ads.length;
 
             if (ads.length === 0) {
-
                 createElement(
                     "p",
                     "No advertisements have been created yet.",
                     list
                 );
-
                 return;
             }
 
             ads.forEach(ad => {
-
-                const card = createElement(
-                    "div",
-                    undefined,
-                    list
-                );
+                const card = createElement("div", undefined, list);
 
                 card.style.cssText = [
                     "background:#102b48",
@@ -1080,11 +1457,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                     "border:1px solid #29445f"
                 ].join(";");
 
-                createElement(
-                    "h3",
-                    ad.title,
-                    card
-                );
+                createElement("h3", ad.title, card);
 
                 createElement(
                     "p",
@@ -1129,50 +1502,40 @@ document.addEventListener("DOMContentLoaded", async function () {
                 );
 
                 statusButton.type = "button";
-
                 styleAdminButton(statusButton);
 
-                statusButton.addEventListener(
-                    "click",
-                    async () => {
+                statusButton.addEventListener("click", async () => {
+                    const newStatus =
+                        ad.status === "active" ? "paused" : "active";
 
-                        const newStatus =
-                            ad.status === "active"
-                                ? "paused"
-                                : "active";
+                    statusButton.disabled = true;
 
-                        statusButton.disabled = true;
+                    try {
+                        const { error } = await db.rpc(
+                            "admin_update_ad_status",
+                            {
+                                p_ad_id: ad.id,
+                                p_status: newStatus
+                            }
+                        );
 
-                        try {
+                        if (error) throw error;
 
-                            const { error } = await db.rpc(
-                                "admin_update_ad_status",
-                                {
-                                    p_ad_id: ad.id,
-                                    p_status: newStatus
-                                }
-                            );
+                        showMessage(
+                            "Advertisement status updated.",
+                            true
+                        );
 
-                            if (error) throw error;
+                        await Promise.all([
+                            loadAdminAds(panel),
+                            loadAdvertisements()
+                        ]);
 
-                            showMessage(
-                                "Advertisement status updated.",
-                                true
-                            );
-
-                            await Promise.all([
-                                loadAdminAds(panel),
-                                loadAdvertisements()
-                            ]);
-
-                        } catch (error) {
-
-                            showMessage(explainError(error));
-
-                            statusButton.disabled = false;
-                        }
+                    } catch (error) {
+                        showMessage(explainError(error));
+                        statusButton.disabled = false;
                     }
-                );
+                });
 
                 const deleteButton = createElement(
                     "button",
@@ -1181,59 +1544,45 @@ document.addEventListener("DOMContentLoaded", async function () {
                 );
 
                 deleteButton.type = "button";
-
                 styleAdminButton(deleteButton, "#d93636");
                 deleteButton.style.color = "white";
 
-                deleteButton.addEventListener(
-                    "click",
-                    async () => {
+                deleteButton.addEventListener("click", async () => {
+                    if (!window.confirm(
+                        "Are you sure you want to delete this advertisement?"
+                    )) return;
 
-                        const confirmed = window.confirm(
-                            "Are you sure you want to delete this advertisement?"
+                    deleteButton.disabled = true;
+
+                    try {
+                        const { error } = await db.rpc(
+                            "admin_delete_ad",
+                            {
+                                p_ad_id: ad.id
+                            }
                         );
 
-                        if (!confirmed) return;
+                        if (error) throw error;
 
-                        deleteButton.disabled = true;
+                        showMessage(
+                            "Advertisement deleted successfully.",
+                            true
+                        );
 
-                        try {
+                        await Promise.all([
+                            loadAdminAds(panel),
+                            loadAdvertisements()
+                        ]);
 
-                            const { error } = await db.rpc(
-                                "admin_delete_ad",
-                                {
-                                    p_ad_id: ad.id
-                                }
-                            );
-
-                            if (error) throw error;
-
-                            showMessage(
-                                "Advertisement deleted successfully.",
-                                true
-                            );
-
-                            await Promise.all([
-                                loadAdminAds(panel),
-                                loadAdvertisements()
-                            ]);
-
-                        } catch (error) {
-
-                            showMessage(explainError(error));
-
-                            deleteButton.disabled = false;
-                        }
+                    } catch (error) {
+                        showMessage(explainError(error));
+                        deleteButton.disabled = false;
                     }
-                );
+                });
             });
 
         } catch (error) {
-
-            console.error(
-                "Admin advertisement error:",
-                error
-            );
+            console.error("Admin advertisement error:", error);
 
             list.replaceChildren();
 
@@ -1245,7 +1594,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             );
 
         } finally {
-
             refresh.disabled = false;
             refresh.textContent = "REFRESH ADVERTISEMENTS";
         }
@@ -1256,7 +1604,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     async function createAdvertisement(form, panel) {
-
         const title =
             form.querySelector("#mgAdTitle").value.trim();
 
@@ -1273,20 +1620,16 @@ document.addEventListener("DOMContentLoaded", async function () {
             Number(form.querySelector("#mgAdDuration").value);
 
         if (!title || !advertiser || !videoURL) {
-
             showMessage(
                 "Please complete the title, advertiser and video link."
             );
-
             return;
         }
 
         if (!safeVideoURL(videoURL)) {
-
             showMessage(
                 "Please enter a valid HTTPS video link."
             );
-
             return;
         }
 
@@ -1295,11 +1638,9 @@ document.addEventListener("DOMContentLoaded", async function () {
             duration < 1 ||
             duration > 3600
         ) {
-
             showMessage(
                 "Duration must be between 1 and 3600 seconds."
             );
-
             return;
         }
 
@@ -1310,7 +1651,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         submit.textContent = "CREATING...";
 
         try {
-
             const { data, error } = await db.rpc(
                 "admin_create_ad",
                 {
@@ -1325,7 +1665,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (error) throw error;
 
             form.reset();
-
             form.querySelector("#mgAdDuration").value = 15;
 
             showMessage(
@@ -1341,11 +1680,9 @@ document.addEventListener("DOMContentLoaded", async function () {
             ]);
 
         } catch (error) {
-
             showMessage(explainError(error));
 
         } finally {
-
             submit.disabled = false;
             submit.textContent = "CREATE ADVERTISEMENT";
         }
@@ -1356,15 +1693,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     async function loadAdminRewards(panel) {
-
-        const list =
-            panel.querySelector("#mgAdminRewardsList");
-
-        const count =
-            panel.querySelector("#mgAdminRewardCount");
-
-        const refresh =
-            panel.querySelector("#mgRefreshRewards");
+        const list = panel.querySelector("#mgAdminRewardsList");
+        const count = panel.querySelector("#mgAdminRewardCount");
+        const refresh = panel.querySelector("#mgRefreshRewards");
 
         if (!list || !count || !refresh) return;
 
@@ -1373,14 +1704,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         list.replaceChildren();
 
-        createElement(
-            "p",
-            "Loading user rewards...",
-            list
-        );
+        createElement("p", "Loading user rewards...", list);
 
         try {
-
             const { data, error } =
                 await db.rpc("admin_get_rewards");
 
@@ -1401,23 +1727,16 @@ document.addEventListener("DOMContentLoaded", async function () {
                 pending;
 
             if (rewards.length === 0) {
-
                 createElement(
                     "p",
                     "No user rewards found yet.",
                     list
                 );
-
                 return;
             }
 
             rewards.forEach(reward => {
-
-                const card = createElement(
-                    "div",
-                    undefined,
-                    list
-                );
+                const card = createElement("div", undefined, list);
 
                 card.style.cssText = [
                     "background:#102b48",
@@ -1455,12 +1774,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 createElement(
                     "p",
-                    "Date: " +
-                    (
-                        reward.created_at
-                            ? new Date(reward.created_at).toLocaleString()
-                            : "Unknown"
-                    ),
+                    "Date: " + formatDate(reward.created_at),
                     card
                 );
 
@@ -1473,22 +1787,19 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 status.style.fontWeight = "bold";
 
-                if (reward.status === "pending") {
-                    status.style.color = "#ffcf70";
-                } else if (reward.status === "approved") {
-                    status.style.color = "#00e5a0";
-                } else {
-                    status.style.color = "#ff7777";
-                }
+                status.style.color =
+                    reward.status === "pending"
+                        ? "#ffcf70"
+                        : reward.status === "approved"
+                            ? "#00e5a0"
+                            : "#ff7777";
 
                 if (reward.status !== "pending") {
-
                     createElement(
                         "p",
                         "This reward has already been processed.",
                         card
                     );
-
                     return;
                 }
 
@@ -1508,7 +1819,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 );
 
                 approveButton.type = "button";
-
                 styleAdminButton(approveButton);
 
                 const rejectButton = createElement(
@@ -1518,160 +1828,127 @@ document.addEventListener("DOMContentLoaded", async function () {
                 );
 
                 rejectButton.type = "button";
-
                 styleAdminButton(rejectButton, "#d93636");
                 rejectButton.style.color = "white";
 
-                approveButton.addEventListener(
-                    "click",
-                    async () => {
+                approveButton.addEventListener("click", async () => {
+                    const amount = Number(reward.amount);
 
-                        const amount = Number(reward.amount);
+                    if (!Number.isFinite(amount) || amount <= 0) {
+                        showMessage(
+                            "Invalid reward amount. Approval cancelled."
+                        );
+                        return;
+                    }
 
-                        if (
-                            !Number.isFinite(amount) ||
-                            amount <= 0
-                        ) {
+                    const confirmed = window.confirm(
+                        "Approve " +
+                        formatMoney(amount, "USD") +
+                        " for " +
+                        (reward.user_email || "this user") +
+                        "?\n\nThis will immediately credit their wallet."
+                    );
 
-                            showMessage(
-                                "Invalid reward amount. Approval cancelled."
-                            );
+                    if (!confirmed) return;
 
-                            return;
-                        }
+                    approveButton.disabled = true;
+                    rejectButton.disabled = true;
+                    approveButton.textContent = "PROCESSING...";
 
-                        const confirmed = window.confirm(
-                            "Approve " +
-                            formatMoney(amount, "USD") +
-                            " for " +
-                            (reward.user_email || "this user") +
-                            "?\n\nThis will immediately credit their wallet."
+                    try {
+                        const { data, error } = await db.rpc(
+                            "admin_process_reward",
+                            {
+                                p_reward_id: reward.reward_id,
+                                p_decision: "approved"
+                            }
                         );
 
-                        if (!confirmed) return;
+                        if (error) throw error;
 
-                        approveButton.disabled = true;
-                        rejectButton.disabled = true;
+                        if (!data || data.success !== true) {
+                            throw new Error(
+                                data?.message ||
+                                "Reward approval was not confirmed."
+                            );
+                        }
+
+                        showMessage(
+                            "Reward approved and wallet credited: " +
+                            formatMoney(data.amount, "USD"),
+                            true
+                        );
+
+                        await Promise.all([
+                            loadAdminRewards(panel),
+                            loadAdminWallets(panel),
+                            loadAdminTransactions(panel)
+                        ]);
+
+                    } catch (error) {
+                        console.error("Reward approval error:", error);
+
+                        showMessage(explainError(error));
+
+                        approveButton.disabled = false;
+                        rejectButton.disabled = false;
 
                         approveButton.textContent =
-                            "PROCESSING...";
-
-                        try {
-
-                            const { data, error } = await db.rpc(
-                                "admin_process_reward",
-                                {
-                                    p_reward_id: reward.reward_id,
-                                    p_decision: "approved"
-                                }
-                            );
-
-                            if (error) throw error;
-
-                            if (!data || data.success !== true) {
-                                throw new Error(
-                                    data?.message ||
-                                    "Reward approval was not confirmed."
-                                );
-                            }
-
-                            showMessage(
-                                "Reward approved and wallet credited: " +
-                                formatMoney(data.amount, "USD"),
-                                true
-                            );
-
-                            await Promise.all([
-                                loadAdminRewards(panel),
-                                loadAdminWallets(panel),
-                                loadAdminTransactions(panel)
-                            ]);
-
-                        } catch (error) {
-
-                            console.error(
-                                "Reward approval error:",
-                                error
-                            );
-
-                            showMessage(explainError(error));
-
-                            approveButton.disabled = false;
-                            rejectButton.disabled = false;
-
-                            approveButton.textContent =
-                                "APPROVE & CREDIT WALLET";
-                        }
+                            "APPROVE & CREDIT WALLET";
                     }
-                );
+                });
 
-                rejectButton.addEventListener(
-                    "click",
-                    async () => {
+                rejectButton.addEventListener("click", async () => {
+                    const confirmed = window.confirm(
+                        "Are you sure you want to reject this reward?\n\nThe user's wallet will not be credited."
+                    );
 
-                        const confirmed = window.confirm(
-                            "Are you sure you want to reject this reward?\n\nThe user's wallet will not be credited."
+                    if (!confirmed) return;
+
+                    approveButton.disabled = true;
+                    rejectButton.disabled = true;
+                    rejectButton.textContent = "REJECTING...";
+
+                    try {
+                        const { data, error } = await db.rpc(
+                            "admin_process_reward",
+                            {
+                                p_reward_id: reward.reward_id,
+                                p_decision: "rejected"
+                            }
                         );
 
-                        if (!confirmed) return;
+                        if (error) throw error;
 
-                        approveButton.disabled = true;
-                        rejectButton.disabled = true;
-
-                        rejectButton.textContent =
-                            "REJECTING...";
-
-                        try {
-
-                            const { data, error } = await db.rpc(
-                                "admin_process_reward",
-                                {
-                                    p_reward_id: reward.reward_id,
-                                    p_decision: "rejected"
-                                }
+                        if (!data || data.success !== true) {
+                            throw new Error(
+                                data?.message ||
+                                "Reward rejection was not confirmed."
                             );
-
-                            if (error) throw error;
-
-                            if (!data || data.success !== true) {
-                                throw new Error(
-                                    data?.message ||
-                                    "Reward rejection was not confirmed."
-                                );
-                            }
-
-                            showMessage(
-                                "Reward rejected. No wallet credit was issued.",
-                                true
-                            );
-
-                            await loadAdminRewards(panel);
-
-                        } catch (error) {
-
-                            console.error(
-                                "Reward rejection error:",
-                                error
-                            );
-
-                            showMessage(explainError(error));
-
-                            approveButton.disabled = false;
-                            rejectButton.disabled = false;
-
-                            rejectButton.textContent =
-                                "REJECT REWARD";
                         }
+
+                        showMessage(
+                            "Reward rejected. No wallet credit was issued.",
+                            true
+                        );
+
+                        await loadAdminRewards(panel);
+
+                    } catch (error) {
+                        console.error("Reward rejection error:", error);
+
+                        showMessage(explainError(error));
+
+                        approveButton.disabled = false;
+                        rejectButton.disabled = false;
+
+                        rejectButton.textContent = "REJECT REWARD";
                     }
-                );
+                });
             });
 
         } catch (error) {
-
-            console.error(
-                "Admin rewards loading error:",
-                error
-            );
+            console.error("Admin rewards loading error:", error);
 
             list.replaceChildren();
 
@@ -1683,7 +1960,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             );
 
         } finally {
-
             refresh.disabled = false;
             refresh.textContent = "REFRESH REWARDS";
         }
@@ -1694,18 +1970,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     async function loadAdminWallets(panel) {
-
-        const list =
-            panel.querySelector("#mgAdminWalletsList");
-
-        const count =
-            panel.querySelector("#mgAdminWalletCount");
-
-        const refresh =
-            panel.querySelector("#mgRefreshWallets");
-
-        const total =
-            panel.querySelector("#mgAdminWalletTotal");
+        const list = panel.querySelector("#mgAdminWalletsList");
+        const count = panel.querySelector("#mgAdminWalletCount");
+        const refresh = panel.querySelector("#mgRefreshWallets");
+        const total = panel.querySelector("#mgAdminWalletTotal");
 
         if (!list || !count || !refresh || !total) return;
 
@@ -1714,14 +1982,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         list.replaceChildren();
 
-        createElement(
-            "p",
-            "Loading user wallets...",
-            list
-        );
+        createElement("p", "Loading user wallets...", list);
 
         try {
-
             const { data, error } =
                 await db.rpc("admin_get_wallets");
 
@@ -1737,7 +2000,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             const totals = {};
 
             wallets.forEach(wallet => {
-
                 const currency = wallet.currency || "USD";
 
                 totals[currency] =
@@ -1756,53 +2018,31 @@ document.addEventListener("DOMContentLoaded", async function () {
                 (totalText || "$0.00");
 
             if (wallets.length === 0) {
-
-                createElement(
-                    "p",
-                    "No user wallets found.",
-                    list
-                );
-
+                createElement("p", "No user wallets found.", list);
                 return;
             }
 
             const tbody = createAdminTable(
                 list,
-                [
-                    "User Email",
-                    "Balance",
-                    "Currency",
-                    "Created"
-                ]
+                ["User Email", "Balance", "Currency", "Created"]
             );
 
             wallets.forEach(wallet => {
-
-                addAdminTableRow(
-                    tbody,
-                    [
-                        wallet.user_email || "Unknown user",
-
-                        formatMoney(
-                            wallet.balance,
-                            wallet.currency || "USD"
-                        ),
-
-                        wallet.currency || "USD",
-
-                        wallet.created_at
-                            ? new Date(wallet.created_at).toLocaleDateString()
-                            : "Unknown"
-                    ]
-                );
+                addAdminTableRow(tbody, [
+                    wallet.user_email || "Unknown user",
+                    formatMoney(
+                        wallet.balance,
+                        wallet.currency || "USD"
+                    ),
+                    wallet.currency || "USD",
+                    wallet.created_at
+                        ? new Date(wallet.created_at).toLocaleDateString()
+                        : "Unknown"
+                ]);
             });
 
         } catch (error) {
-
-            console.error(
-                "Admin wallet error:",
-                error
-            );
+            console.error("Admin wallet error:", error);
 
             list.replaceChildren();
 
@@ -1817,7 +2057,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 "TOTAL WALLET BALANCES: Unavailable";
 
         } finally {
-
             refresh.disabled = false;
             refresh.textContent = "REFRESH WALLETS";
         }
@@ -1828,7 +2067,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     async function loadAdminTransactions(panel) {
-
         const list =
             panel.querySelector("#mgAdminTransactionsList");
 
@@ -1845,14 +2083,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         list.replaceChildren();
 
-        createElement(
-            "p",
-            "Loading wallet transactions...",
-            list
-        );
+        createElement("p", "Loading wallet transactions...", list);
 
         try {
-
             const { data, error } =
                 await db.rpc("admin_get_transactions");
 
@@ -1881,13 +2114,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                 debits.length;
 
             if (transactions.length === 0) {
-
                 createElement(
                     "p",
                     "No wallet transactions found yet.",
                     list
                 );
-
                 return;
             }
 
@@ -1904,32 +2135,16 @@ document.addEventListener("DOMContentLoaded", async function () {
             );
 
             transactions.forEach(transaction => {
-
-                const currency = "USD";
-
-                const row = addAdminTableRow(
-                    tbody,
-                    [
-                        transaction.user_email || "Unknown user",
-
-                        formatMoney(
-                            transaction.amount,
-                            currency
-                        ),
-
-                        String(
-                            transaction.transaction_type || "Unknown"
-                        ).toUpperCase(),
-
-                        transaction.description || "",
-
-                        transaction.created_at
-                            ? new Date(transaction.created_at).toLocaleString()
-                            : "Unknown",
-
-                        transaction.transaction_id || ""
-                    ]
-                );
+                const row = addAdminTableRow(tbody, [
+                    transaction.user_email || "Unknown user",
+                    formatMoney(transaction.amount, "USD"),
+                    String(
+                        transaction.transaction_type || "Unknown"
+                    ).toUpperCase(),
+                    transaction.description || "",
+                    formatDate(transaction.created_at),
+                    transaction.transaction_id || ""
+                ]);
 
                 const type = String(
                     transaction.transaction_type || ""
@@ -1943,11 +2158,7 @@ document.addEventListener("DOMContentLoaded", async function () {
             });
 
         } catch (error) {
-
-            console.error(
-                "Admin transaction error:",
-                error
-            );
+            console.error("Admin transaction error:", error);
 
             list.replaceChildren();
 
@@ -1959,7 +2170,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             );
 
         } finally {
-
             refresh.disabled = false;
             refresh.textContent = "REFRESH TRANSACTIONS";
         }
@@ -1967,23 +2177,15 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     // ========================================
     // ADMIN DASHBOARD
-    // DUPLICATE CREATION PROTECTION
     // ========================================
 
     async function checkAdminAccess(user) {
-
         if (adminAccessCheckInProgress) {
-
-            const existing =
-                document.querySelector("#mgAdminPanel");
-
-            return !!existing;
+            return !!document.querySelector("#mgAdminPanel");
         }
 
         if (!user || !user.id) {
-
-            const panel =
-                document.querySelector("#mgAdminPanel");
+            const panel = document.querySelector("#mgAdminPanel");
 
             if (panel) panel.hidden = true;
 
@@ -1995,18 +2197,13 @@ document.addEventListener("DOMContentLoaded", async function () {
         let panel = null;
 
         try {
-
             const existingPanels =
                 document.querySelectorAll("#mgAdminPanel");
 
             panel = existingPanels[0] || null;
 
             existingPanels.forEach((item, index) => {
-
-                if (index > 0) {
-                    item.remove();
-                }
-
+                if (index > 0) item.remove();
             });
 
             const { data, error } =
@@ -2015,16 +2212,11 @@ document.addEventListener("DOMContentLoaded", async function () {
             if (error) throw error;
 
             if (data !== true) {
-
-                if (panel) {
-                    panel.hidden = true;
-                }
-
+                if (panel) panel.hidden = true;
                 return false;
             }
 
             if (!panel) {
-
                 const dashboardContainer =
                     dashboard.querySelector(".dashboard-container");
 
@@ -2035,7 +2227,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 }
 
                 panel = document.createElement("section");
-
                 panel.id = "mgAdminPanel";
 
                 panel.style.cssText = [
@@ -2049,13 +2240,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 dashboardContainer.appendChild(panel);
 
-                // ADMIN HEADING
-
-                createElement(
-                    "h2",
-                    "MG ADMIN DASHBOARD",
-                    panel
-                );
+                createElement("h2", "MG ADMIN DASHBOARD", panel);
 
                 const adminStatus = createElement(
                     "p",
@@ -2065,17 +2250,10 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 adminStatus.style.color = "#00e5a0";
 
-                // ========================================
-                // USER MANAGEMENT SECTION
-                // ========================================
+                // USER MANAGEMENT
 
                 createElement("hr", undefined, panel);
-
-                createElement(
-                    "h2",
-                    "👥 USER MANAGEMENT",
-                    panel
-                );
+                createElement("h2", "👥 USER MANAGEMENT", panel);
 
                 const userCount = createElement(
                     "h3",
@@ -2093,27 +2271,18 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 userRefresh.id = "mgRefreshUsers";
                 userRefresh.type = "button";
-
                 styleAdminButton(userRefresh);
 
-                const userList = createElement(
-                    "div",
-                    undefined,
-                    panel
-                );
-
+                const userList = createElement("div", undefined, panel);
                 userList.id = "mgAdminUsersList";
 
                 userRefresh.addEventListener("click", () => {
                     loadAdminUsers(panel);
                 });
 
-                // ========================================
-                // ADVERTISEMENT MANAGEMENT SECTION
-                // ========================================
+                // ADVERTISEMENT MANAGEMENT
 
                 createElement("hr", undefined, panel);
-
                 createElement(
                     "h2",
                     "📢 ADVERTISEMENT MANAGEMENT",
@@ -2126,14 +2295,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                     panel
                 );
 
-                // CREATE AD FORM
-
-                const form = createElement(
-                    "form",
-                    undefined,
-                    panel
-                );
-
+                const form = createElement("form", undefined, panel);
                 form.id = "mgCreateAdForm";
 
                 function addAdminInput(
@@ -2142,9 +2304,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                     type = "text",
                     required = true
                 ) {
-
-                    const input =
-                        document.createElement("input");
+                    const input = document.createElement("input");
 
                     input.id = id;
                     input.type = type;
@@ -2166,21 +2326,13 @@ document.addEventListener("DOMContentLoaded", async function () {
                     return input;
                 }
 
-                addAdminInput(
-                    "mgAdTitle",
-                    "Advertisement title"
-                );
-
-                addAdminInput(
-                    "mgAdAdvertiser",
-                    "Advertiser / Company name"
-                );
+                addAdminInput("mgAdTitle", "Advertisement title");
+                addAdminInput("mgAdAdvertiser", "Advertiser / Company name");
 
                 const descriptionInput =
                     document.createElement("textarea");
 
                 descriptionInput.id = "mgAdDescription";
-
                 descriptionInput.placeholder =
                     "Advertisement description";
 
@@ -2219,13 +2371,10 @@ document.addEventListener("DOMContentLoaded", async function () {
                 );
 
                 createButton.type = "submit";
-
                 styleAdminButton(createButton);
 
                 form.addEventListener("submit", event => {
-
                     event.preventDefault();
-
                     createAdvertisement(form, panel);
                 });
 
@@ -2255,32 +2404,19 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 adRefresh.id = "mgRefreshAds";
                 adRefresh.type = "button";
-
                 styleAdminButton(adRefresh);
 
-                const adList = createElement(
-                    "div",
-                    undefined,
-                    panel
-                );
-
+                const adList = createElement("div", undefined, panel);
                 adList.id = "mgAdminAdsList";
 
                 adRefresh.addEventListener("click", () => {
                     loadAdminAds(panel);
                 });
 
-                // ========================================
-                // REWARDS MANAGEMENT SECTION
-                // ========================================
+                // REWARDS MANAGEMENT
 
                 createElement("hr", undefined, panel);
-
-                createElement(
-                    "h2",
-                    "💰 REWARDS MANAGEMENT",
-                    panel
-                );
+                createElement("h2", "💰 REWARDS MANAGEMENT", panel);
 
                 createElement(
                     "p",
@@ -2304,7 +2440,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 rewardRefresh.id = "mgRefreshRewards";
                 rewardRefresh.type = "button";
-
                 styleAdminButton(rewardRefresh);
 
                 const rewardList = createElement(
@@ -2319,17 +2454,10 @@ document.addEventListener("DOMContentLoaded", async function () {
                     loadAdminRewards(panel);
                 });
 
-                // ========================================
-                // WALLET MANAGEMENT SECTION
-                // ========================================
+                // WALLET MANAGEMENT
 
                 createElement("hr", undefined, panel);
-
-                createElement(
-                    "h2",
-                    "👛 WALLET MANAGEMENT",
-                    panel
-                );
+                createElement("h2", "👛 WALLET MANAGEMENT", panel);
 
                 createElement(
                     "p",
@@ -2361,7 +2489,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
                 walletRefresh.id = "mgRefreshWallets";
                 walletRefresh.type = "button";
-
                 styleAdminButton(walletRefresh);
 
                 const walletList = createElement(
@@ -2376,9 +2503,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                     loadAdminWallets(panel);
                 });
 
-                // ========================================
-                // TRANSACTIONS MANAGEMENT SECTION
-                // ========================================
+                // TRANSACTIONS MANAGEMENT
 
                 createElement("hr", undefined, panel);
 
@@ -2413,7 +2538,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                     "mgRefreshTransactions";
 
                 transactionRefresh.type = "button";
-
                 styleAdminButton(transactionRefresh);
 
                 const transactionList = createElement(
@@ -2429,9 +2553,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                     loadAdminTransactions(panel);
                 });
 
-                // ========================================
                 // SECURITY NOTICE
-                // ========================================
 
                 createElement("hr", undefined, panel);
 
@@ -2447,8 +2569,6 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             panel.hidden = false;
 
-            // LOAD ALL ADMIN SECTIONS
-
             await Promise.all([
                 loadAdminUsers(panel),
                 loadAdminAds(panel),
@@ -2460,20 +2580,13 @@ document.addEventListener("DOMContentLoaded", async function () {
             return true;
 
         } catch (error) {
+            console.error("Admin verification error:", error);
 
-            console.error(
-                "Admin verification error:",
-                error
-            );
-
-            if (panel) {
-                panel.hidden = true;
-            }
+            if (panel) panel.hidden = true;
 
             return false;
 
         } finally {
-
             adminAccessCheckInProgress = false;
         }
     }
@@ -2483,14 +2596,16 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     async function loadUserAccount(user) {
-
         if (!user || !user.id) return;
+
+        currentUser = user;
 
         showDashboard(user);
 
         await Promise.all([
             loadWallet(user),
             loadAdvertisements(),
+            loadUserActivity(user),
             checkAdminAccess(user)
         ]);
     }
@@ -2499,192 +2614,152 @@ document.addEventListener("DOMContentLoaded", async function () {
     // REGISTRATION
     // ========================================
 
-    registerForm.addEventListener(
-        "submit",
-        async function (event) {
+    registerForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
 
-            event.preventDefault();
+        const email =
+            document.getElementById("registerEmail")?.value.trim();
 
-            const email =
-                document.getElementById("registerEmail")?.value.trim();
+        const password =
+            document.getElementById("registerPassword")?.value;
 
-            const password =
-                document.getElementById("registerPassword")?.value;
-
-            if (!email || !password) {
-
-                showMessage(
-                    "Please enter your email and password."
-                );
-
-                return;
-            }
-
-            if (password.length < 8) {
-
-                showMessage(
-                    "Password must contain at least 8 characters."
-                );
-
-                return;
-            }
-
-            setLoading(registerForm, true);
-
-            showMessage(
-                "Creating your account...",
-                true
-            );
-
-            try {
-
-                const { data, error } = await db.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        emailRedirectTo:
-                            window.location.origin +
-                            window.location.pathname
-                    }
-                });
-
-                if (error) throw error;
-
-                registerForm.reset();
-
-                if (data.session) {
-
-                    await loadUserAccount(data.user);
-
-                    showMessage(
-                        "Your account was created successfully!",
-                        true
-                    );
-
-                } else {
-
-                    showMessage(
-                        "Registration successful! Please verify your email.",
-                        true
-                    );
-                }
-
-            } catch (error) {
-
-                showMessage(explainError(error));
-
-            } finally {
-
-                setLoading(registerForm, false);
-            }
+        if (!email || !password) {
+            showMessage("Please enter your email and password.");
+            return;
         }
-    );
+
+        if (password.length < 8) {
+            showMessage(
+                "Password must contain at least 8 characters."
+            );
+            return;
+        }
+
+        setLoading(registerForm, true);
+        showMessage("Creating your account...", true);
+
+        try {
+            const { data, error } = await db.auth.signUp({
+                email,
+                password,
+                options: {
+                    emailRedirectTo:
+                        window.location.origin +
+                        window.location.pathname
+                }
+            });
+
+            if (error) throw error;
+
+            registerForm.reset();
+
+            if (data.session) {
+                await loadUserAccount(data.user);
+
+                showMessage(
+                    "Your account was created successfully!",
+                    true
+                );
+            } else {
+                showMessage(
+                    "Registration successful! Please verify your email.",
+                    true
+                );
+            }
+
+        } catch (error) {
+            showMessage(explainError(error));
+
+        } finally {
+            setLoading(registerForm, false);
+        }
+    });
 
     // ========================================
     // LOGIN
     // ========================================
 
-    loginForm.addEventListener(
-        "submit",
-        async function (event) {
+    loginForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
 
-            event.preventDefault();
+        const email =
+            document.getElementById("loginEmail")?.value.trim();
 
-            const email =
-                document.getElementById("loginEmail")?.value.trim();
+        const password =
+            document.getElementById("loginPassword")?.value;
 
-            const password =
-                document.getElementById("loginPassword")?.value;
-
-            if (!email || !password) {
-
-                showMessage(
-                    "Enter your email and password."
-                );
-
-                return;
-            }
-
-            setLoading(loginForm, true);
-
-            showMessage("Signing in...", true);
-
-            try {
-
-                const { data, error } =
-                    await db.auth.signInWithPassword({
-                        email,
-                        password
-                    });
-
-                if (error) throw error;
-
-                loginForm.reset();
-
-                await loadUserAccount(data.user);
-
-                showMessage(
-                    "Welcome to MG WATCH & EARN!",
-                    true
-                );
-
-            } catch (error) {
-
-                showMessage(explainError(error));
-
-            } finally {
-
-                setLoading(loginForm, false);
-            }
+        if (!email || !password) {
+            showMessage("Enter your email and password.");
+            return;
         }
-    );
+
+        setLoading(loginForm, true);
+        showMessage("Signing in...", true);
+
+        try {
+            const { data, error } =
+                await db.auth.signInWithPassword({
+                    email,
+                    password
+                });
+
+            if (error) throw error;
+
+            loginForm.reset();
+
+            await loadUserAccount(data.user);
+
+            showMessage(
+                "Welcome to MG WATCH & EARN!",
+                true
+            );
+
+        } catch (error) {
+            showMessage(explainError(error));
+
+        } finally {
+            setLoading(loginForm, false);
+        }
+    });
 
     // ========================================
     // LOGOUT
     // ========================================
 
     if (logoutButton) {
+        logoutButton.addEventListener("click", async function () {
+            logoutButton.disabled = true;
 
-        logoutButton.addEventListener(
-            "click",
-            async function () {
+            try {
+                const { error } = await db.auth.signOut();
 
-                logoutButton.disabled = true;
+                if (error) throw error;
 
-                try {
+                currentUser = null;
 
-                    const { error } =
-                        await db.auth.signOut();
+                showLoginForms();
 
-                    if (error) throw error;
-
-                    showLoginForms();
-
-                    if (advertisementList) {
-                        advertisementList.replaceChildren();
-                    }
-
-                    if (advertisementMessage) {
-
-                        advertisementMessage.textContent =
-                            "Please log in to view advertisements.";
-                    }
-
-                    showMessage(
-                        "You have successfully logged out.",
-                        true
-                    );
-
-                } catch (error) {
-
-                    showMessage(explainError(error));
-
-                } finally {
-
-                    logoutButton.disabled = false;
+                if (advertisementList) {
+                    advertisementList.replaceChildren();
                 }
+
+                if (advertisementMessage) {
+                    advertisementMessage.textContent =
+                        "Please log in to view advertisements.";
+                }
+
+                showMessage(
+                    "You have successfully logged out.",
+                    true
+                );
+
+            } catch (error) {
+                showMessage(explainError(error));
+
+            } finally {
+                logoutButton.disabled = false;
             }
-        );
+        });
     }
 
     // ========================================
@@ -2692,29 +2767,23 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     async function checkSession() {
-
         try {
-
             const { data, error } =
                 await db.auth.getSession();
 
             if (error) throw error;
 
             if (data.session) {
-
                 await loadUserAccount(data.session.user);
-
             } else {
-
+                currentUser = null;
                 showLoginForms();
             }
 
         } catch (error) {
-
             console.error("Session error:", error);
 
             showLoginForms();
-
             showMessage(explainError(error));
         }
     }
@@ -2724,8 +2793,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     db.auth.onAuthStateChange((event, session) => {
-
         if (event === "SIGNED_OUT") {
+            currentUser = null;
 
             showLoginForms();
 
@@ -2746,7 +2815,6 @@ document.addEventListener("DOMContentLoaded", async function () {
                 event === "USER_UPDATED"
             )
         ) {
-
             setTimeout(() => {
                 loadUserAccount(session.user);
             }, 0);
@@ -2758,18 +2826,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ========================================
 
     window.addEventListener("offline", () => {
-
-        showMessage(
-            "Internet connection lost."
-        );
+        showMessage("Internet connection lost.");
     });
 
     window.addEventListener("online", () => {
-
-        showMessage(
-            "Internet connection restored.",
-            true
-        );
+        showMessage("Internet connection restored.", true);
     });
 
     // ========================================
