@@ -1882,6 +1882,64 @@ document.addEventListener("DOMContentLoaded", async function () {
         }
     }
 
+
+    // ========================================
+    // ADMIN CAMPAIGN FUNDING MANAGEMENT
+    // ========================================
+    async function loadAdminCampaignFunding(panel) {
+        const list = panel.querySelector("#mgAdminCampaignFundingList");
+        const count = panel.querySelector("#mgAdminCampaignFundingCount");
+        const select = panel.querySelector("#mgFundingCampaign");
+        const refresh = panel.querySelector("#mgRefreshCampaignFunding");
+        if (!list || !count || !select || !refresh) return;
+        refresh.disabled = true;
+        list.replaceChildren();
+        createElement("p", "Loading campaign funding...", list);
+        try {
+            const { data, error } = await db.rpc("admin_get_campaign_funding");
+            if (error) throw error;
+            const rows = data || [];
+            list.replaceChildren(); select.replaceChildren();
+            createElement("option", "Select a campaign", select).value = "";
+            let budget=0, reserved=0, spent=0, available=0;
+            rows.forEach(item => {
+                const opt = createElement("option", item.title || item.advertisement_id, select);
+                opt.value = item.advertisement_id;
+                budget += Number(item.sponsor_budget || 0);
+                reserved += Number(item.reserved_amount || 0);
+                spent += Number(item.spent_amount || 0);
+                available += Number(item.available_budget || 0);
+            });
+            count.textContent = `CAMPAIGNS: ${rows.length} | BUDGET: ${formatMoney(budget)} | RESERVED: ${formatMoney(reserved)} | SPENT: ${formatMoney(spent)} | AVAILABLE: ${formatMoney(available)}`;
+            if (!rows.length) createElement("p", "No campaign funding records found.", list);
+            else {
+                const tbody = createAdminTable(list,["Campaign","Sponsor Budget","Reserved","Spent","Available","Funding Status"]);
+                rows.forEach(x => addAdminTableRow(tbody,[x.title,formatMoney(x.sponsor_budget),formatMoney(x.reserved_amount),formatMoney(x.spent_amount),formatMoney(x.available_budget),x.funding_status]));
+            }
+        } catch(e) { list.replaceChildren(); createElement("p", "Could not load campaign funding: " + (e.message || "Unknown error"), list); }
+        finally { refresh.disabled=false; }
+    }
+
+    async function recordCampaignFunding(form, panel) {
+        const campaign = form.querySelector("#mgFundingCampaign").value;
+        const amount = Number(form.querySelector("#mgFundingAmount").value);
+        const reference = form.querySelector("#mgFundingReference").value.trim();
+        if (!campaign || !Number.isFinite(amount) || amount <= 0 || !reference) {
+            showMessage("Select a campaign and enter a valid amount and payment reference."); return;
+        }
+        if (!confirm("Only continue if this sponsor payment has already been received and independently verified. Record this payment?")) return;
+        const button = form.querySelector("button[type=submit]"); button.disabled=true;
+        try {
+            const { data, error } = await db.rpc("admin_record_campaign_funding", {p_advertisement_id:campaign,p_amount:amount,p_payment_reference:reference});
+            if (error) throw error;
+            const result = Array.isArray(data) ? data[0] : data;
+            if (!result || result.success !== true) throw new Error(result?.message || "Funding record was not accepted.");
+            showMessage(result.message || "Campaign funding recorded."); form.querySelector("#mgFundingAmount").value=""; form.querySelector("#mgFundingReference").value="";
+            await loadAdminCampaignFunding(panel);
+        } catch(e) { showMessage("Could not record funding: " + (e.message || "Unknown error")); }
+        finally { button.disabled=false; }
+    }
+
     // ========================================
     // ADMIN DASHBOARD
     // ========================================
@@ -2199,6 +2257,26 @@ document.addEventListener("DOMContentLoaded", async function () {
                     () => loadAdminTransactions(panel)
                 );
 
+
+                // CAMPAIGN FUNDING MANAGEMENT
+                createElement("hr", undefined, panel);
+                createElement("h2", "💰 CAMPAIGN FUNDING MANAGEMENT", panel);
+                createElement("p", "Review sponsor budgets and record payments only after they have been independently verified.", panel);
+                const fundingCount = createElement("h3", "CAMPAIGN FUNDING: Loading...", panel);
+                fundingCount.id = "mgAdminCampaignFundingCount";
+                const fundingRefresh = createElement("button", "REFRESH CAMPAIGN FUNDING", panel);
+                fundingRefresh.id = "mgRefreshCampaignFunding"; fundingRefresh.type = "button"; styleAdminButton(fundingRefresh);
+                const fundingList = createElement("div", undefined, panel); fundingList.id = "mgAdminCampaignFundingList";
+                fundingRefresh.addEventListener("click", () => loadAdminCampaignFunding(panel));
+                const fundingForm = createElement("form", undefined, panel);
+                fundingForm.style.cssText = "display:grid;gap:10px;max-width:500px;margin:15px 0;";
+                const campaignSelect = createElement("select", undefined, fundingForm); campaignSelect.id = "mgFundingCampaign";
+                const amountInput = createElement("input", undefined, fundingForm); amountInput.id = "mgFundingAmount"; amountInput.type="number"; amountInput.min="0.01"; amountInput.step="0.01"; amountInput.placeholder="Verified payment amount (USD)";
+                const referenceInput = createElement("input", undefined, fundingForm); referenceInput.id="mgFundingReference"; referenceInput.type="text"; referenceInput.placeholder="Unique payment reference";
+                const fundingSubmit = createElement("button", "RECORD VERIFIED SPONSOR PAYMENT", fundingForm); fundingSubmit.type="submit"; styleAdminButton(fundingSubmit);
+                fundingForm.addEventListener("submit", event => { event.preventDefault(); recordCampaignFunding(fundingForm,panel); });
+                createElement("p", "WARNING: This form records a payment reference; it does not verify or collect money. Never enter test or unpaid funds.", panel).style.cssText="color:#ffcf70;font-size:13px;";
+
                 // SECURITY NOTICE
 
                 createElement("hr", undefined, panel);
@@ -2219,7 +2297,8 @@ document.addEventListener("DOMContentLoaded", async function () {
                 loadAdminAds(panel),
                 loadAdminRewards(panel),
                 loadAdminWallets(panel),
-                loadAdminTransactions(panel)
+                loadAdminTransactions(panel),
+                loadAdminCampaignFunding(panel)
             ]);
 
             return true;
