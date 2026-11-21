@@ -403,7 +403,70 @@
         pending until approved.
     </p>
 
+</div><!-- ADVERTISER CAMPAIGN SUBMISSION -->
+
+<div class="dashboard-card" id="advertiserCampaignSection" hidden>
+
+    <h2>📢 MG TECH — ADVERTISER DASHBOARD</h2>
+
+    <p>Submit your advertising campaign for admin review.</p>
+
+    <form id="advertiserCampaignForm">
+
+        <input
+            type="text"
+            id="campaignTitle"
+            placeholder="Campaign Title"
+            maxlength="150"
+            required
+        >
+
+        <textarea
+            id="campaignDescription"
+            placeholder="Describe your advertisement"
+            maxlength="2000"
+            required
+            style="width:100%;padding:14px;margin:12px 0;box-sizing:border-box;"
+        ></textarea>
+
+        <input
+            type="url"
+            id="campaignVideoURL"
+            placeholder="Advertisement Video HTTPS URL"
+            required
+        >
+
+        <input
+            type="number"
+            id="campaignDuration"
+            placeholder="Video Duration (5–300 seconds)"
+            min="5"
+            max="300"
+            value="15"
+            required
+        >
+
+        <input
+            type="number"
+            id="campaignReward"
+            placeholder="Reward per completed view (USD)"
+            min="0.0001"
+            max="100"
+            step="0.0001"
+            required
+        >
+
+        <button type="submit">
+            SUBMIT CAMPAIGN
+        </button>
+
+    </form>
+
+    <p id="advertiserCampaignMessage"></p>
+
 </div>
+
+<!-- END ADVERTISER CAMPAIGN SUBMISSION -->
             <!-- WATCH & EARN -->
 
             <div class="dashboard-card" id="watch">
