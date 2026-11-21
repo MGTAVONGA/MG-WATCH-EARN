@@ -2904,7 +2904,42 @@ if (advertiserCampaignForm) {
             }
         }
     );
-}
+}// ========================================
+// ADVERTISER CAMPAIGN SUBMISSION
+// ========================================
+
+if (advertiserCampaignForm) {
+
+    advertiserCampaignForm.addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
+
+            const campaignMessage =
+                document.getElementById("advertiserCampaignMessage");
+
+            if (!currentUser) {
+                campaignMessage.textContent =
+                    "Please log in before submitting a campaign.";
+                campaignMessage.style.color = "#ff7777";
+                return;
+            }
+
+            const title =
+                document.getElementById("campaignTitle").value.trim();
+
+            const description =
+                document.getElementById("campaignDescription").value.trim();
+
+            const videoURL =
+                document.getElementById("campaignVideoURL").value.trim();
+
+            const duration =
+                Number(document.getElementById("campaignDuration").value);
+
+            const reward =
+                Number(document.getElementById("campaignReward").value);
     // ========================================
     // REGISTRATION
     // ========================================
