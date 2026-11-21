@@ -465,7 +465,105 @@
     <p id="advertiserCampaignMessage"></p>
 
 </div>
+<!-- ADVERTISER PAYMENT SUBMISSION -->
 
+<div class="dashboard-card" id="advertiserPaymentSection">
+
+    <h2>💳 ADVERTISER CAMPAIGN PAYMENT</h2>
+
+    <p>
+        Fund your approved advertising campaign.
+        Payments must be verified by an administrator.
+    </p>
+
+    <form id="advertiserPaymentForm">
+
+        <label for="paymentAdvertisementId">
+            Select Approved Advertisement
+        </label>
+
+        <select
+            id="paymentAdvertisementId"
+            required
+            style="display:block;width:100%;padding:14px;margin:12px 0;border-radius:6px;"
+        >
+            <option value="">Loading your campaigns...</option>
+        </select>
+
+        <label for="advertiserPaymentMethod">
+            Payment Method
+        </label>
+
+        <select
+            id="advertiserPaymentMethod"
+            required
+            style="display:block;width:100%;padding:14px;margin:12px 0;border-radius:6px;"
+        >
+            <option value="">Select payment method</option>
+            <option value="bank_transfer">Bank Transfer / EFT</option>
+            <option value="paypal">PayPal</option>
+            <option value="ecocash">EcoCash</option>
+        </select>
+
+        <label for="advertiserPaymentAmount">
+            Payment Amount (USD)
+        </label>
+
+        <input
+            type="number"
+            id="advertiserPaymentAmount"
+            placeholder="Enter amount in USD"
+            min="1"
+            step="0.01"
+            required
+        >
+
+        <label for="advertiserPaymentReference">
+            Payment Reference
+        </label>
+
+        <input
+            type="text"
+            id="advertiserPaymentReference"
+            placeholder="Enter your payment reference"
+            maxlength="150"
+            required
+        >
+
+        <label for="advertiserPaymentProof">
+            Proof of Payment URL
+        </label>
+
+        <input
+            type="url"
+            id="advertiserPaymentProof"
+            placeholder="Paste HTTPS proof-of-payment link"
+            required
+        >
+
+        <button type="submit" id="advertiserPaymentButton">
+            SUBMIT PAYMENT FOR VERIFICATION
+        </button>
+
+    </form>
+
+    <div
+        id="advertiserPaymentMessage"
+        role="status"
+        aria-live="polite"
+        style="padding:12px;margin-top:12px;color:#ddd;"
+    ></div>
+
+    <p style="font-size:13px;color:#aaa;">
+        Your payment will remain pending until an administrator
+        independently verifies that the money has been received.
+        Submitting payment details does not add money to your
+        campaign balance.
+    </p>
+
+</div>
+
+<!-- END ADVERTISER PAYMENT SUBMISSION -->
 <!-- END ADVERTISER CAMPAIGN SUBMISSION -->
             <!-- WATCH & EARN -->
 
