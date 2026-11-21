@@ -2644,7 +2644,113 @@ const advertiserApplicationForm =
 
         return loadPromise;
     }
+// ========================================
+// ADVERTISER REGISTRATION
+// ========================================
 
+if (advertiserApplicationForm) {
+
+    advertiserApplicationForm.addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
+
+            const businessName =
+                document.getElementById("advertiserBusinessName")
+                    .value.trim();
+
+            const contactEmail =
+                document.getElementById("advertiserContactEmail")
+                    .value.trim();
+
+            const phoneNumber =
+                document.getElementById("advertiserPhoneNumber")
+                    .value.trim();
+
+            const businessDescription =
+                document.getElementById("advertiserBusinessDescription")
+                    .value.trim();
+
+            const applicationMessage =
+                document.getElementById("advertiserApplicationMessage");
+
+            if (!businessName || !contactEmail) {
+                applicationMessage.textContent =
+                    "Please enter your business name and contact email.";
+                return;
+            }
+
+            const { data: userData, error: userError } =
+                await db.auth.getUser();
+
+            if (userError || !userData.user) {
+                applicationMessage.textContent =
+                    "Please log in before applying as an advertiser.";
+                return;
+            }
+
+            setLoading(advertiserApplicationForm, true);
+
+            applicationMessage.textContent =
+                "Submitting your application...";
+
+            try {
+
+                const { data, error } = await db.rpc(
+                    "apply_for_advertiser",
+                    {
+                        p_business_name: businessName,
+                        p_contact_email: contactEmail,
+                        p_phone_number: phoneNumber || null,
+                        p_business_description:
+                            businessDescription || null
+                    }
+                );
+
+                if (error) throw error;
+
+                if (
+                    data &&
+                    (data.success === false || data.ok === false)
+                ) {
+                    throw new Error(
+                        data.message || "Application was not accepted."
+                    );
+                }
+
+                applicationMessage.textContent =
+                    "Application submitted successfully! " +
+                    "Your advertiser account is now pending admin approval.";
+
+                applicationMessage.style.color = "#00e5a0";
+
+                advertiserApplicationForm.reset();
+
+            } catch (error) {
+
+                console.error("Advertiser application error:", error);
+
+                const errorText =
+                    error.message || "Something went wrong.";
+
+                applicationMessage.textContent =
+                    errorText.toLowerCase().includes("already")
+                        ? "You have already submitted an advertiser application."
+                        : "Application failed: " + errorText;
+
+                applicationMessage.style.color = "#ff7777";
+
+            } finally {
+
+                setLoading(advertiserApplicationForm, false);
+
+            }
+
+        }
+    );
+
+}
     // ========================================
     // REGISTRATION
     // ========================================
