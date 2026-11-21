@@ -272,7 +272,9 @@ const advertiserCampaignSection =
 
     function showLoginForms() {
         dashboard.hidden = true;
-
+if (advertiserCampaignSection) {
+    advertiserCampaignSection.hidden = true;
+}
         registerForm.hidden = false;
         loginForm.hidden = false;
 
@@ -287,7 +289,9 @@ const advertiserCampaignSection =
 
     function showDashboard(user) {
         dashboard.hidden = false;
-
+if (advertiserCampaignSection) {
+    advertiserCampaignSection.hidden = false;
+}
         registerForm.hidden = true;
         loginForm.hidden = true;
 
