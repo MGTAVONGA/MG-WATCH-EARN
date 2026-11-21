@@ -1887,39 +1887,87 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ADMIN CAMPAIGN FUNDING MANAGEMENT
     // ========================================
     async function loadAdminCampaignFunding(panel) {
-        const list = panel.querySelector("#mgAdminCampaignFundingList");
-        const count = panel.querySelector("#mgAdminCampaignFundingCount");
-        const select = panel.querySelector("#mgFundingCampaign");
-        const refresh = panel.querySelector("#mgRefreshCampaignFunding");
-        if (!list || !count || !select || !refresh) return;
-        refresh.disabled = true;
-        list.replaceChildren();
-        createElement("p", "Loading campaign funding...", list);
-        try {
-            const { data, error } = await db.rpc("admin_get_campaign_funding");
-            if (error) throw error;
-            const rows = data || [];
-            list.replaceChildren(); select.replaceChildren();
-            createElement("option", "Select a campaign", select).value = "";
-            let budget=0, reserved=0, spent=0, available=0;
-            rows.forEach(item => {
-                const opt = createElement("option", item.title || item.advertisement_id, select);
-                opt.value = item.advertisement_id;
-                budget += Number(item.sponsor_budget || 0);
-                reserved += Number(item.reserved_amount || 0);
-                spent += Number(item.spent_amount || 0);
-                available += Number(item.available_budget || 0);
-            });
-            count.textContent = `CAMPAIGNS: ${rows.length} | BUDGET: ${formatMoney(budget)} | RESERVED: ${formatMoney(reserved)} | SPENT: ${formatMoney(spent)} | AVAILABLE: ${formatMoney(available)}`;
-            if (!rows.length) createElement("p", "No campaign funding records found.", list);
-            else {
-                const tbody = createAdminTable(list,["Campaign","Sponsor Budget","Reserved","Spent","Available","Funding Status"]);
-                rows.forEach(x => addAdminTableRow(tbody,[x.title,formatMoney(x.sponsor_budget),formatMoney(x.reserved_amount),formatMoney(x.spent_amount),formatMoney(x.available_budget),x.funding_status]));
-            }
-        } catch(e) { list.replaceChildren(); createElement("p", "Could not load campaign funding: " + (e.message || "Unknown error"), list); }
-        finally { refresh.disabled=false; }
-    }
+    const list = panel.querySelector("#mgAdminCampaignFundingList");
+    const count = panel.querySelector("#mgAdminCampaignFundingCount");
+    const select = panel.querySelector("#mgFundingCampaign");
+    const refresh = panel.querySelector("#mgRefreshCampaignFunding");
 
+    if (!list || !count || !select || !refresh) return;
+
+    refresh.disabled = true;
+    list.replaceChildren();
+    createElement("p", "Loading campaign funding...", list);
+
+    try {
+        const { data, error } = await db.rpc("admin_get_campaign_funding");
+
+        if (error) throw error;
+
+        const rows = data || [];
+
+        list.replaceChildren();
+        select.replaceChildren();
+
+        createElement("option", "Select a campaign", select).value = "";
+
+        let budget = 0;
+        let reserved = 0;
+        let spent = 0;
+        let available = 0;
+
+        rows.forEach(item => {
+            const opt = createElement(
+                "option",
+                item.title || item.advertisement_id,
+                select
+            );
+
+            opt.value = item.advertisement_id;
+
+            budget += Number(item.sponsor_budget || 0);
+            reserved += Number(item.reserved_amount || 0);
+            spent += Number(item.spent_amount || 0);
+            available += Number(item.available_amount || 0);
+        });
+
+        count.textContent =
+            `CAMPAIGNS: ${rows.length} | BUDGET: ${formatMoney(budget)} | RESERVED: ${formatMoney(reserved)} | SPENT: ${formatMoney(spent)} | AVAILABLE: ${formatMoney(available)}`;
+
+        if (!rows.length) {
+            createElement("p", "No campaign funding records found.", list);
+        } else {
+            const tbody = createAdminTable(list, [
+                "Campaign",
+                "Sponsor Budget",
+                "Reserved",
+                "Spent",
+                "Available",
+                "Funding Status"
+            ]);
+
+            rows.forEach(x => {
+                addAdminTableRow(tbody, [
+                    x.title,
+                    formatMoney(x.sponsor_budget),
+                    formatMoney(x.reserved_amount),
+                    formatMoney(x.spent_amount),
+                    formatMoney(x.available_amount),
+                    x.funding_status
+                ]);
+            });
+        }
+
+    } catch (e) {
+        list.replaceChildren();
+        createElement(
+            "p",
+            "Could not load campaign funding: " + (e.message || "Unknown error"),
+            list
+        );
+    } finally {
+        refresh.disabled = false;
+    }
+}
     async function recordCampaignFunding(form, panel) {
         const campaign = form.querySelector("#mgFundingCampaign").value;
         const amount = Number(form.querySelector("#mgFundingAmount").value);
