@@ -1,4 +1,8 @@
-// ========================================
+
+        {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,// ========================================
 // MG WATCH & EARN
 // COMPLETE WEBSITE + ADMIN MANAGEMENT
 // STAGE 8: USER REWARDS & WATCH HISTORY
@@ -26,10 +30,6 @@ try {
     db = window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_PUBLISHABLE_KEY,
-        {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true,
                 detectSessionInUrl: true
             }
         }
@@ -273,6 +273,8 @@ const advertiserCampaignSection =
     function showLoginForms() {
         dashboard.hidden = true;
 if (advertiserCampaignSection) {
+    advertiserCampaignSection.hidden = true;
+}if (advertiserCampaignSection) {
     advertiserCampaignSection.hidden = true;
 }
         registerForm.hidden = false;
