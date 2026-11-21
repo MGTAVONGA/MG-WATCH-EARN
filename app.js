@@ -3006,7 +3006,47 @@ if (advertiserCampaignForm) {
                 campaignMessage.style.color = "#ff7777";
                 return;
             }
+            setLoading(advertiserCampaignForm, true);
 
+            campaignMessage.textContent =
+                "Submitting your advertising campaign...";
+
+            campaignMessage.style.color = "#ffcf70";
+
+            try {
+
+                const { data, error } = await db.rpc(
+                    "advertiser_submit_campaign",
+                    {
+                        p_title: title,
+                        p_description: description,
+                        p_video_url: videoURL,
+                        p_duration_seconds: duration,
+                        p_requested_reward_amount: reward
+                    }
+                );
+
+                if (error) throw error;
+
+                if (
+                    data &&
+                    (data.success === false || data.ok === false)
+                ) {
+                    throw new Error(
+                        data.message ||
+                        "Campaign submission was rejected."
+                    );
+                }
+
+                campaignMessage.textContent =
+                    "Campaign submitted successfully! " +
+                    "It is now waiting for admin review.";
+
+                campaignMessage.style.color = "#00e5a0";
+
+                advertiserCampaignForm.reset();
+
+                document.getElementById("campaignDuration").value = 15;
             const title =
                 document.getElementById("campaignTitle").value.trim();
 
