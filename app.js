@@ -55,7 +55,11 @@ const advertiserApplicationForm =
     document.getElementById("advertiserApplicationForm");
     const advertisementList =
         document.getElementById("advertisementList");
+const advertiserCampaignForm =
+    document.getElementById("advertiserCampaignForm");
 
+const advertiserCampaignSection =
+    document.getElementById("advertiserCampaignSection");
     const advertisementMessage =
         document.getElementById("advertisementMessage");
 
