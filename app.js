@@ -293,6 +293,8 @@ if (advertiserCampaignSection) {
         dashboard.hidden = false;
 if (advertiserCampaignSection) {
     advertiserCampaignSection.hidden = false;
+}if (advertiserCampaignSection) {
+    advertiserCampaignSection.hidden = false;
 }
         registerForm.hidden = true;
         loginForm.hidden = true;
