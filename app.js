@@ -282,7 +282,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     function showDashboard(user) {
         dashboard.hidden = false;
-
+        if (advertiserCampaignSection) {
+            advertiserCampaignSection.hidden = false;
+        }
         registerForm.hidden = true;
         loginForm.hidden = true;
 
