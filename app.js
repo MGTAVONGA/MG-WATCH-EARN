@@ -2625,12 +2625,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                 } finally {
 
                     setLoading(advertiserCampaignForm, false);
-
                 }
             }
-        );
-    }
-```
+            
     // ========================================
     // LOGOUT
     // ========================================
