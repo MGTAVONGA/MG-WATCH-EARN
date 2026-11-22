@@ -2439,120 +2439,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         } finally {
             setLoading(registerForm, false);
         }
-    });
-// ========================================
-// ADVERTISER CAMPAIGN SUBMISSION
-// ========================================
-
-if (advertiserCampaignForm) {
-
-    advertiserCampaignForm.addEventListener(
-        "submit",
-        async function (event) {
-
-            event.preventDefault();
-
-            const campaignMessage =
-                document.getElementById("advertiserCampaignMessage");
-
-            if (!currentUser) {
-                campaignMessage.textContent =
-                    "Please log in before submitting a campaign.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }            
-            const title =
-                document.getElementById("campaignTitle").value.trim();
-
-            const description =
-                document.getElementById("campaignDescription").value.trim();
-
-            const videoURL =
-                document.getElementById("campaignVideoURL").value.trim();
-
-            const duration =
-                Number(document.getElementById("campaignDuration").value);
-
-            const reward =
-                Number(document.getElementById("campaignReward").value);
-                        if (!title || !description || !videoURL) {
-                campaignMessage.textContent =
-                    "Please complete all campaign details.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            if (title.length > 150 || description.length > 2000) {
-                campaignMessage.textContent =
-                    "Please check the title and description lengths.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            if (!safeVideoURL(videoURL)) {
-                campaignMessage.textContent =
-                    "Please enter a valid HTTPS video link.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }            if (
-                !Number.isInteger(duration) ||
-                duration < 5 ||
-                duration > 300
-            ) {
-                campaignMessage.textContent =
-                    "Video duration must be between 5 and 300 seconds.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            if (
-                !Number.isFinite(reward) ||
-                reward <= 0 ||
-                reward > 100
-            ) {
-                campaignMessage.textContent =
-                    "Reward must be greater than $0 and not more than $100.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }            setLoading(advertiserCampaignForm, true);
-
-            campaignMessage.textContent =
-                "Submitting your advertising campaign...";
-
-            campaignMessage.style.color = "#ffcf70";
-
-            try {
-
-                const { data, error } = await db.rpc(
-                    "advertiser_submit_campaign",
-                    {
-                        p_title: title,
-                        p_description: description,
-                        p_video_url: videoURL,
-                        p_duration_seconds: duration,
-                        p_requested_reward_amount: reward
-                    }
-                );
-
-                if (error) throw error;                if (
-                    data &&
-                    (data.success === false || data.ok === false)
-                ) {
-                    throw new Error(
-                        data.message ||
-                        "Campaign submission was rejected."
-                    );
-                }
-
-                campaignMessage.textContent =
-                    "Campaign submitted successfully! " +
-                    "It is now waiting for admin review.";
-
-                campaignMessage.style.color = "#00e5a0";
-
-                advertiserCampaignForm.reset();
-
-                document.getElementById("campaignDuration").value = 15;
+    });```javascript
+  ```javascript
     // ========================================
     // LOGIN
     // ========================================
@@ -2598,27 +2486,151 @@ if (advertiserCampaignForm) {
             setLoading(loginForm, false);
         }
     });
-            } catch (error) {
 
-                console.error(
-                    "Campaign submission error:",
-                    error
-                );
+    // ========================================
+    // ADVERTISER CAMPAIGN SUBMISSION
+    // ========================================
+
+    if (advertiserCampaignForm) {
+
+        advertiserCampaignForm.addEventListener(
+            "submit",
+            async function (event) {
+
+                event.preventDefault();
+
+                const campaignMessage =
+                    document.getElementById("advertiserCampaignMessage");
+
+                if (!currentUser) {
+                    campaignMessage.textContent =
+                        "Please log in before submitting a campaign.";
+                    campaignMessage.style.color = "#ff7777";
+                    return;
+                }
+
+                const title =
+                    document.getElementById("campaignTitle").value.trim();
+
+                const description =
+                    document.getElementById("campaignDescription").value.trim();
+
+                const videoURL =
+                    document.getElementById("campaignVideoURL").value.trim();
+
+                const duration =
+                    Number(document.getElementById("campaignDuration").value);
+
+                const reward =
+                    Number(document.getElementById("campaignReward").value);
+
+                if (!title || !description || !videoURL) {
+                    campaignMessage.textContent =
+                        "Please complete all campaign details.";
+                    campaignMessage.style.color = "#ff7777";
+                    return;
+                }
+
+                if (title.length > 150 || description.length > 2000) {
+                    campaignMessage.textContent =
+                        "Please check the title and description lengths.";
+                    campaignMessage.style.color = "#ff7777";
+                    return;
+                }
+
+                if (!safeVideoURL(videoURL)) {
+                    campaignMessage.textContent =
+                        "Please enter a valid HTTPS video link.";
+                    campaignMessage.style.color = "#ff7777";
+                    return;
+                }
+
+                if (
+                    !Number.isInteger(duration) ||
+                    duration < 5 ||
+                    duration > 300
+                ) {
+                    campaignMessage.textContent =
+                        "Video duration must be between 5 and 300 seconds.";
+                    campaignMessage.style.color = "#ff7777";
+                    return;
+                }
+
+                if (
+                    !Number.isFinite(reward) ||
+                    reward <= 0 ||
+                    reward > 100
+                ) {
+                    campaignMessage.textContent =
+                        "Reward must be greater than $0 and not more than $100.";
+                    campaignMessage.style.color = "#ff7777";
+                    return;
+                }
+
+                setLoading(advertiserCampaignForm, true);
 
                 campaignMessage.textContent =
-                    "Campaign submission failed: " +
-                    (error.message || "Please try again.");
+                    "Submitting your advertising campaign...";
 
-                campaignMessage.style.color = "#ff7777";
+                campaignMessage.style.color = "#ffcf70";
 
-            } finally {
+                try {
 
-                setLoading(advertiserCampaignForm, false);
+                    const { data, error } = await db.rpc(
+                        "advertiser_submit_campaign",
+                        {
+                            p_title: title,
+                            p_description: description,
+                            p_video_url: videoURL,
+                            p_duration_seconds: duration,
+                            p_requested_reward_amount: reward
+                        }
+                    );
 
+                    if (error) throw error;
+
+                    if (
+                        data &&
+                        (data.success === false || data.ok === false)
+                    ) {
+                        throw new Error(
+                            data.message ||
+                            "Campaign submission was rejected."
+                        );
+                    }
+
+                    campaignMessage.textContent =
+                        "Campaign submitted successfully! " +
+                        "It is now waiting for admin review.";
+
+                    campaignMessage.style.color = "#00e5a0";
+
+                    advertiserCampaignForm.reset();
+
+                    document.getElementById("campaignDuration").value = 15;
+
+                } catch (error) {
+
+                    console.error(
+                        "Campaign submission error:",
+                        error
+                    );
+
+                    campaignMessage.textContent =
+                        "Campaign submission failed: " +
+                        (error.message || "Please try again.");
+
+                    campaignMessage.style.color = "#ff7777";
+
+                } finally {
+
+                    setLoading(advertiserCampaignForm, false);
+
+                }
             }
-        }
-    );
-}
+        );
+    }
+```
     // ========================================
     // LOGOUT
     // ========================================
