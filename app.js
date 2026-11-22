@@ -51,7 +51,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     const message = document.getElementById("authMessage");
     const dashboard = document.getElementById("userDashboard");
     const userEmail = document.getElementById("userEmail");
+    const advertiserCampaignForm =
+        document.getElementById("advertiserCampaignForm");
 
+    const advertiserCampaignSection =
+        document.getElementById("advertiserCampaignSection");
     const advertisementList =
         document.getElementById("advertisementList");
 
