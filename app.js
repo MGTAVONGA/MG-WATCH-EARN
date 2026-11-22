@@ -2440,7 +2440,27 @@ document.addEventListener("DOMContentLoaded", async function () {
             setLoading(registerForm, false);
         }
     });
+// ========================================
+// ADVERTISER CAMPAIGN SUBMISSION
+// ========================================
 
+if (advertiserCampaignForm) {
+
+    advertiserCampaignForm.addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
+
+            const campaignMessage =
+                document.getElementById("advertiserCampaignMessage");
+
+            if (!currentUser) {
+                campaignMessage.textContent =
+                    "Please log in before submitting a campaign.";
+                campaignMessage.style.color = "#ff7777";
+                return;
+            }
     // ========================================
     // LOGIN
     // ========================================
