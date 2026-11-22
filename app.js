@@ -2439,8 +2439,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         } finally {
             setLoading(registerForm, false);
         }
-    });```javascript
-  ```javascript
+    });
+    
     // ========================================
     // LOGIN
     // ========================================
