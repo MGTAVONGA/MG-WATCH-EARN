@@ -1,8 +1,4 @@
-
-        {
-            auth: {
-                persistSession: true,
-                autoRefreshToken: true,// ========================================
+// ========================================
 // MG WATCH & EARN
 // COMPLETE WEBSITE + ADMIN MANAGEMENT
 // STAGE 8: USER REWARDS & WATCH HISTORY
@@ -30,6 +26,10 @@ try {
     db = window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_PUBLISHABLE_KEY,
+        {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
                 detectSessionInUrl: true
             }
         }
@@ -51,15 +51,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     const message = document.getElementById("authMessage");
     const dashboard = document.getElementById("userDashboard");
     const userEmail = document.getElementById("userEmail");
-const advertiserApplicationForm =
-    document.getElementById("advertiserApplicationForm");
+
     const advertisementList =
         document.getElementById("advertisementList");
-const advertiserCampaignForm =
-    document.getElementById("advertiserCampaignForm");
 
-const advertiserCampaignSection =
-    document.getElementById("advertiserCampaignSection");
     const advertisementMessage =
         document.getElementById("advertisementMessage");
 
@@ -272,11 +267,7 @@ const advertiserCampaignSection =
 
     function showLoginForms() {
         dashboard.hidden = true;
-if (advertiserCampaignSection) {
-    advertiserCampaignSection.hidden = true;
-}if (advertiserCampaignSection) {
-    advertiserCampaignSection.hidden = true;
-}
+
         registerForm.hidden = false;
         loginForm.hidden = false;
 
@@ -291,11 +282,7 @@ if (advertiserCampaignSection) {
 
     function showDashboard(user) {
         dashboard.hidden = false;
-if (advertiserCampaignSection) {
-    advertiserCampaignSection.hidden = false;
-}if (advertiserCampaignSection) {
-    advertiserCampaignSection.hidden = false;
-}
+
         registerForm.hidden = true;
         loginForm.hidden = true;
 
@@ -1900,87 +1887,39 @@ if (advertiserCampaignSection) {
     // ADMIN CAMPAIGN FUNDING MANAGEMENT
     // ========================================
     async function loadAdminCampaignFunding(panel) {
-    const list = panel.querySelector("#mgAdminCampaignFundingList");
-    const count = panel.querySelector("#mgAdminCampaignFundingCount");
-    const select = panel.querySelector("#mgFundingCampaign");
-    const refresh = panel.querySelector("#mgRefreshCampaignFunding");
-
-    if (!list || !count || !select || !refresh) return;
-
-    refresh.disabled = true;
-    list.replaceChildren();
-    createElement("p", "Loading campaign funding...", list);
-
-    try {
-        const { data, error } = await db.rpc("admin_get_campaign_funding");
-
-        if (error) throw error;
-
-        const rows = data || [];
-
+        const list = panel.querySelector("#mgAdminCampaignFundingList");
+        const count = panel.querySelector("#mgAdminCampaignFundingCount");
+        const select = panel.querySelector("#mgFundingCampaign");
+        const refresh = panel.querySelector("#mgRefreshCampaignFunding");
+        if (!list || !count || !select || !refresh) return;
+        refresh.disabled = true;
         list.replaceChildren();
-        select.replaceChildren();
-
-        createElement("option", "Select a campaign", select).value = "";
-
-        let budget = 0;
-        let reserved = 0;
-        let spent = 0;
-        let available = 0;
-
-        rows.forEach(item => {
-            const opt = createElement(
-                "option",
-                item.title || item.advertisement_id,
-                select
-            );
-
-            opt.value = item.advertisement_id;
-
-            budget += Number(item.sponsor_budget || 0);
-            reserved += Number(item.reserved_amount || 0);
-            spent += Number(item.spent_amount || 0);
-            available += Number(item.available_amount || 0);
-        });
-
-        count.textContent =
-            `CAMPAIGNS: ${rows.length} | BUDGET: ${formatMoney(budget)} | RESERVED: ${formatMoney(reserved)} | SPENT: ${formatMoney(spent)} | AVAILABLE: ${formatMoney(available)}`;
-
-        if (!rows.length) {
-            createElement("p", "No campaign funding records found.", list);
-        } else {
-            const tbody = createAdminTable(list, [
-                "Campaign",
-                "Sponsor Budget",
-                "Reserved",
-                "Spent",
-                "Available",
-                "Funding Status"
-            ]);
-
-            rows.forEach(x => {
-                addAdminTableRow(tbody, [
-                    x.title,
-                    formatMoney(x.sponsor_budget),
-                    formatMoney(x.reserved_amount),
-                    formatMoney(x.spent_amount),
-                    formatMoney(x.available_amount),
-                    x.funding_status
-                ]);
+        createElement("p", "Loading campaign funding...", list);
+        try {
+            const { data, error } = await db.rpc("admin_get_campaign_funding");
+            if (error) throw error;
+            const rows = data || [];
+            list.replaceChildren(); select.replaceChildren();
+            createElement("option", "Select a campaign", select).value = "";
+            let budget=0, reserved=0, spent=0, available=0;
+            rows.forEach(item => {
+                const opt = createElement("option", item.title || item.advertisement_id, select);
+                opt.value = item.advertisement_id;
+                budget += Number(item.sponsor_budget || 0);
+                reserved += Number(item.reserved_amount || 0);
+                spent += Number(item.spent_amount || 0);
+                available += Number(item.available_budget || 0);
             });
-        }
-
-    } catch (e) {
-        list.replaceChildren();
-        createElement(
-            "p",
-            "Could not load campaign funding: " + (e.message || "Unknown error"),
-            list
-        );
-    } finally {
-        refresh.disabled = false;
+            count.textContent = `CAMPAIGNS: ${rows.length} | BUDGET: ${formatMoney(budget)} | RESERVED: ${formatMoney(reserved)} | SPENT: ${formatMoney(spent)} | AVAILABLE: ${formatMoney(available)}`;
+            if (!rows.length) createElement("p", "No campaign funding records found.", list);
+            else {
+                const tbody = createAdminTable(list,["Campaign","Sponsor Budget","Reserved","Spent","Available","Funding Status"]);
+                rows.forEach(x => addAdminTableRow(tbody,[x.title,formatMoney(x.sponsor_budget),formatMoney(x.reserved_amount),formatMoney(x.spent_amount),formatMoney(x.available_budget),x.funding_status]));
+            }
+        } catch(e) { list.replaceChildren(); createElement("p", "Could not load campaign funding: " + (e.message || "Unknown error"), list); }
+        finally { refresh.disabled=false; }
     }
-}
+
     async function recordCampaignFunding(form, panel) {
         const campaign = form.querySelector("#mgFundingCampaign").value;
         const amount = Number(form.querySelector("#mgFundingAmount").value);
@@ -1999,197 +1938,6 @@ if (advertiserCampaignSection) {
             await loadAdminCampaignFunding(panel);
         } catch(e) { showMessage("Could not record funding: " + (e.message || "Unknown error")); }
         finally { button.disabled=false; }
-    }
-
-
-    // ========================================
-    // ADMIN ADVERTISER MANAGEMENT
-    // ========================================
-
-    async function loadAdminAdvertisers(panel) {
-        const list = panel.querySelector("#mgAdminAdvertisersList");
-        const count = panel.querySelector("#mgAdminAdvertiserCount");
-        const refresh = panel.querySelector("#mgRefreshAdvertisers");
-        if (!list || !count || !refresh) return;
-
-        refresh.disabled = true;
-        refresh.textContent = "LOADING...";
-        list.replaceChildren();
-        createElement("p", "Loading advertiser applications...", list);
-
-        try {
-            const { data, error } = await db.rpc("admin_get_advertisers");
-            if (error) throw error;
-
-            const advertisers = data || [];
-            list.replaceChildren();
-            const pending = advertisers.filter(x => x.status === "pending").length;
-            count.textContent = `ADVERTISERS: ${advertisers.length} | PENDING: ${pending}`;
-
-            if (!advertisers.length) {
-                createElement("p", "No advertiser applications found.", list);
-                return;
-            }
-
-            advertisers.forEach(ad => {
-                const card = createElement("div", undefined, list);
-                card.style.cssText = "background:#102b48;padding:16px;margin:12px 0;border-radius:9px;border:1px solid #29445f;";
-                createElement("h3", ad.business_name || "Business", card);
-                createElement("p", "Contact: " + (ad.contact_email || ""), card);
-                createElement("p", "Phone: " + (ad.phone_number || "Not provided"), card);
-                createElement("p", "Description: " + (ad.business_description || "Not provided"), card);
-                createElement("p", "Applied: " + formatDate(ad.created_at), card);
-                const status = createElement("p", "STATUS: " + String(ad.status).toUpperCase(), card);
-                status.style.fontWeight = "bold";
-                status.style.color = ad.status === "approved" ? "#00e5a0" :
-                    ad.status === "pending" ? "#ffcf70" : "#ff7777";
-
-                const actions = createElement("div", undefined, card);
-                if (ad.status !== "approved") {
-                    const approve = createElement("button", "APPROVE", actions);
-                    approve.type = "button"; styleAdminButton(approve);
-                    approve.addEventListener("click", () => updateAdvertiserStatus(ad, "approved", panel));
-                }
-                if (ad.status !== "rejected") {
-                    const reject = createElement("button", "REJECT", actions);
-                    reject.type = "button"; styleAdminButton(reject, "#d93636"); reject.style.color = "white";
-                    reject.addEventListener("click", () => updateAdvertiserStatus(ad, "rejected", panel));
-                }
-                if (ad.status !== "suspended") {
-                    const suspend = createElement("button", "SUSPEND", actions);
-                    suspend.type = "button"; styleAdminButton(suspend, "#b7791f");
-                    suspend.addEventListener("click", () => updateAdvertiserStatus(ad, "suspended", panel));
-                }
-            });
-        } catch (error) {
-            list.replaceChildren();
-            createElement("p", "Could not load advertisers: " + (error.message || "Unknown error"), list);
-        } finally {
-            refresh.disabled = false;
-            refresh.textContent = "REFRESH ADVERTISERS";
-        }
-    }
-
-    async function updateAdvertiserStatus(ad, status, panel) {
-        if (!window.confirm("Set " + ad.business_name + " to " + status.toUpperCase() + "?")) return;
-        try {
-            const { data, error } = await db.rpc("admin_update_advertiser_status", {
-                p_profile_id: ad.profile_id,
-                p_status: status
-            });
-            if (error) throw error;
-            if (!data || data.success !== true) throw new Error(data?.message || "Status update failed.");
-            showMessage(data.message || "Advertiser status updated.", true);
-            await Promise.all([
-                loadAdminAdvertisers(panel),
-                loadAdminAdvertiserCampaigns(panel)
-            ]);
-        } catch (error) {
-            showMessage("Could not update advertiser: " + (error.message || "Unknown error"));
-        }
-    }
-
-    // ========================================
-    // ADMIN ADVERTISER CAMPAIGN REVIEW
-    // ========================================
-
-    async function loadAdminAdvertiserCampaigns(panel) {
-        const list = panel.querySelector("#mgAdminAdvertiserCampaignsList");
-        const count = panel.querySelector("#mgAdminAdvertiserCampaignCount");
-        const refresh = panel.querySelector("#mgRefreshAdvertiserCampaigns");
-        if (!list || !count || !refresh) return;
-
-        refresh.disabled = true;
-        refresh.textContent = "LOADING...";
-        list.replaceChildren();
-        createElement("p", "Loading submitted advertiser campaigns...", list);
-
-        try {
-            const { data, error } = await db.rpc("admin_get_advertiser_campaigns");
-            if (error) throw error;
-            const campaigns = data || [];
-            list.replaceChildren();
-            const pending = campaigns.filter(x => x.status === "pending").length;
-            count.textContent = `CAMPAIGNS: ${campaigns.length} | PENDING REVIEW: ${pending}`;
-
-            if (!campaigns.length) {
-                createElement("p", "No advertiser campaigns have been submitted.", list);
-                return;
-            }
-
-            campaigns.forEach(campaign => {
-                const card = createElement("div", undefined, list);
-                card.style.cssText = "background:#102b48;padding:16px;margin:12px 0;border-radius:9px;border:1px solid #29445f;";
-                createElement("h3", campaign.title || "Campaign", card);
-                createElement("p", "Business: " + (campaign.business_name || "Unknown"), card);
-                createElement("p", "Duration: " + campaign.duration_seconds + " seconds", card);
-                createElement("p", "Requested reward per completed view: " + formatMoney(campaign.requested_reward_amount, "USD"), card);
-                createElement("p", "Video: " + (campaign.video_url || ""), card);
-                if (campaign.description) createElement("p", campaign.description, card);
-                createElement("p", "Submitted: " + formatDate(campaign.created_at), card);
-                if (campaign.advertisement_id) createElement("p", "Advertisement ID: " + campaign.advertisement_id, card);
-                if (campaign.admin_notes) createElement("p", "Admin notes: " + campaign.admin_notes, card);
-
-                const status = createElement("p", "STATUS: " + String(campaign.status).toUpperCase(), card);
-                status.style.fontWeight = "bold";
-                status.style.color = campaign.status === "approved" ? "#00e5a0" :
-                    campaign.status === "pending" ? "#ffcf70" : "#ff7777";
-
-                const notes = document.createElement("textarea");
-                notes.placeholder = "Optional admin notes";
-                notes.maxLength = 1000;
-                notes.style.cssText = "width:100%;min-height:55px;padding:10px;box-sizing:border-box;margin:8px 0;";
-                card.appendChild(notes);
-
-                const actions = createElement("div", undefined, card);
-                if (campaign.status !== "approved") {
-                    const approve = createElement("button", "APPROVE (CREATES PAUSED AD)", actions);
-                    approve.type = "button"; styleAdminButton(approve);
-                    approve.addEventListener("click", () => reviewAdvertiserCampaign(campaign, "approved", notes.value, panel));
-                }
-                if (campaign.status !== "rejected") {
-                    const reject = createElement("button", "REJECT", actions);
-                    reject.type = "button"; styleAdminButton(reject, "#d93636"); reject.style.color = "white";
-                    reject.addEventListener("click", () => reviewAdvertiserCampaign(campaign, "rejected", notes.value, panel));
-                }
-                if (campaign.status !== "suspended") {
-                    const suspend = createElement("button", "SUSPEND", actions);
-                    suspend.type = "button"; styleAdminButton(suspend, "#b7791f");
-                    suspend.addEventListener("click", () => reviewAdvertiserCampaign(campaign, "suspended", notes.value, panel));
-                }
-            });
-        } catch (error) {
-            list.replaceChildren();
-            createElement("p", "Could not load advertiser campaigns: " + (error.message || "Unknown error"), list);
-        } finally {
-            refresh.disabled = false;
-            refresh.textContent = "REFRESH ADVERTISER CAMPAIGNS";
-        }
-    }
-
-    async function reviewAdvertiserCampaign(campaign, decision, notes, panel) {
-        const warning = decision === "approved"
-            ? "Approve this campaign? This creates its advertisement as PAUSED. It will not appear to viewers until it is separately activated after verified funding."
-            : "Set this campaign to " + decision.toUpperCase() + "?";
-        if (!window.confirm(warning)) return;
-
-        try {
-            const { data, error } = await db.rpc("admin_review_advertiser_campaign", {
-                p_campaign_id: campaign.campaign_id,
-                p_decision: decision,
-                p_admin_notes: notes || null
-            });
-            if (error) throw error;
-            if (!data || data.success !== true) throw new Error(data?.message || "Campaign review failed.");
-            showMessage(data.message || "Campaign reviewed.", true);
-            await Promise.all([
-                loadAdminAdvertiserCampaigns(panel),
-                loadAdminAds(panel),
-                loadAdminCampaignFunding(panel)
-            ]);
-        } catch (error) {
-            showMessage("Could not review campaign: " + (error.message || "Unknown error"));
-        }
     }
 
     // ========================================
@@ -2396,37 +2144,6 @@ if (advertiserCampaignSection) {
 
                 adRefresh.addEventListener("click", () => loadAdminAds(panel));
 
-
-                // ADVERTISER APPLICATION MANAGEMENT
-
-                createElement("hr", undefined, panel);
-                createElement("h2", "🏢 ADVERTISER MANAGEMENT", panel);
-                createElement("p", "Review business applications and approve, reject or suspend advertisers.", panel);
-                const advertiserCount = createElement("h3", "ADVERTISERS: Loading...", panel);
-                advertiserCount.id = "mgAdminAdvertiserCount";
-                const advertiserRefresh = createElement("button", "REFRESH ADVERTISERS", panel);
-                advertiserRefresh.id = "mgRefreshAdvertisers";
-                advertiserRefresh.type = "button";
-                styleAdminButton(advertiserRefresh);
-                const advertiserList = createElement("div", undefined, panel);
-                advertiserList.id = "mgAdminAdvertisersList";
-                advertiserRefresh.addEventListener("click", () => loadAdminAdvertisers(panel));
-
-                // ADVERTISER CAMPAIGN REVIEW
-
-                createElement("hr", undefined, panel);
-                createElement("h2", "🎯 ADVERTISER CAMPAIGN REVIEW", panel);
-                createElement("p", "Review submitted campaigns. Approval creates a paused advertisement; funding and activation are separate steps.", panel);
-                const advertiserCampaignCount = createElement("h3", "CAMPAIGNS: Loading...", panel);
-                advertiserCampaignCount.id = "mgAdminAdvertiserCampaignCount";
-                const advertiserCampaignRefresh = createElement("button", "REFRESH ADVERTISER CAMPAIGNS", panel);
-                advertiserCampaignRefresh.id = "mgRefreshAdvertiserCampaigns";
-                advertiserCampaignRefresh.type = "button";
-                styleAdminButton(advertiserCampaignRefresh);
-                const advertiserCampaignList = createElement("div", undefined, panel);
-                advertiserCampaignList.id = "mgAdminAdvertiserCampaignsList";
-                advertiserCampaignRefresh.addEventListener("click", () => loadAdminAdvertiserCampaigns(panel));
-
                 // REWARDS MANAGEMENT
 
                 createElement("hr", undefined, panel);
@@ -2578,8 +2295,6 @@ if (advertiserCampaignSection) {
             await Promise.all([
                 loadAdminUsers(panel),
                 loadAdminAds(panel),
-                loadAdminAdvertisers(panel),
-                loadAdminAdvertiserCampaigns(panel),
                 loadAdminRewards(panel),
                 loadAdminWallets(panel),
                 loadAdminTransactions(panel),
@@ -2656,411 +2371,7 @@ if (advertiserCampaignSection) {
 
         return loadPromise;
     }
-// ========================================
-// ADVERTISER REGISTRATION
-// ========================================
 
-if (advertiserApplicationForm) {
-
-    advertiserApplicationForm.addEventListener(
-        "submit",
-        async function (event) {
-
-            event.preventDefault();
-
-            const businessName =
-                document.getElementById("advertiserBusinessName")
-                    .value.trim();
-
-            const contactEmail =
-                document.getElementById("advertiserContactEmail")
-                    .value.trim();
-
-            const phoneNumber =
-                document.getElementById("advertiserPhoneNumber")
-                    .value.trim();
-
-            const businessDescription =
-                document.getElementById("advertiserBusinessDescription")
-                    .value.trim();
-
-            const applicationMessage =
-                document.getElementById("advertiserApplicationMessage");
-
-            if (!businessName || !contactEmail) {
-                applicationMessage.textContent =
-                    "Please enter your business name and contact email.";
-                return;
-            }
-
-            const { data: userData, error: userError } =
-                await db.auth.getUser();
-
-            if (userError || !userData.user) {
-                applicationMessage.textContent =
-                    "Please log in before applying as an advertiser.";
-                return;
-            }
-
-            setLoading(advertiserApplicationForm, true);
-
-            applicationMessage.textContent =
-                "Submitting your application...";
-
-            try {
-
-                const { data, error } = await db.rpc(
-                    "apply_for_advertiser",
-                    {
-                        p_business_name: businessName,
-                        p_contact_email: contactEmail,
-                        p_phone_number: phoneNumber || null,
-                        p_business_description:
-                            businessDescription || null
-                    }
-                );
-
-                if (error) throw error;
-
-                if (
-                    data &&
-                    (data.success === false || data.ok === false)
-                ) {
-                    throw new Error(
-                        data.message || "Application was not accepted."
-                    );
-                }
-
-                applicationMessage.textContent =
-                    "Application submitted successfully! " +
-                    "Your advertiser account is now pending admin approval.";
-
-                applicationMessage.style.color = "#00e5a0";
-
-                advertiserApplicationForm.reset();
-
-            } catch (error) {
-
-                console.error("Advertiser application error:", error);
-
-                const errorText =
-                    error.message || "Something went wrong.";
-
-                applicationMessage.textContent =
-                    errorText.toLowerCase().includes("already")
-                        ? "You have already submitted an advertiser application."
-                        : "Application failed: " + errorText;
-
-                applicationMessage.style.color = "#ff7777";
-
-            } finally {
-
-                setLoading(advertiserApplicationForm, false);
-
-            }
-
-        }
-    );
-
-}// ========================================
-// ADVERTISER CAMPAIGN SUBMISSION
-// ========================================
-
-if (advertiserCampaignForm) {
-
-    advertiserCampaignForm.addEventListener(
-        "submit",
-        async function (event) {
-
-            event.preventDefault();
-
-            const campaignMessage =
-                document.getElementById("advertiserCampaignMessage");
-
-            if (!currentUser) {
-                campaignMessage.textContent =
-                    "Please log in before submitting a campaign.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            const title =
-                document.getElementById("campaignTitle").value.trim();
-
-            const description =
-                document.getElementById("campaignDescription").value.trim();
-
-            const videoURL =
-                document.getElementById("campaignVideoURL").value.trim();
-
-            const duration =
-                Number(document.getElementById("campaignDuration").value);
-
-            const reward =
-                Number(document.getElementById("campaignReward").value);
-            if (!title || !description || !videoURL) {
-                campaignMessage.textContent =
-                    "Please complete all campaign details.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            if (title.length > 150 || description.length > 2000) {
-                campaignMessage.textContent =
-                    "Please check the title and description lengths.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-            setLoading(advertiserCampaignForm, true);
-
-            campaignMessage.textContent =
-                "Submitting your advertising campaign...";
-
-            campaignMessage.style.color = "#ffcf70";
-
-            try {
-
-                const { data, error } = await db.rpc(
-                    "advertiser_submit_campaign",
-                    {
-                        p_title: title,
-                        p_description: description,
-                        p_video_url: videoURL,
-                        p_duration_seconds: duration,
-                        p_requested_reward_amount: reward
-                    }
-                );
-
-                if (error) throw error;
-
-                if (
-                    data &&
-                    (data.success === false || data.ok === false)
-                ) {
-                    throw new Error(
-                        data.message ||
-                        "Campaign submission was rejected."
-                    );
-                }
-
-                campaignMessage.textContent =
-                    "Campaign submitted successfully! " +
-                    "It is now waiting for admin review.";
-
-                campaignMessage.style.color = "#00e5a0";
-
-                advertiserCampaignForm.reset();
-
-                document.getElementById("campaignDuration").value = 15;
-            if (!safeVideoURL(videoURL)) {
-                campaignMessage.textContent =
-                    "Please enter a valid HTTPS video link.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            if (
-                !Number.isInteger(duration) ||
-                duration < 5 ||
-                duration > 300
-            ) {
-                campaignMessage.textContent =
-                    "Video duration must be between 5 and 300 seconds.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            if (
-                !Number.isFinite(reward) ||
-                reward <= 0 ||
-                reward > 100
-            ) {
-                campaignMessage.textContent =
-                    "Reward must be greater than $0 and not more than $100.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-            if (!title || !description || !videoURL) {
-                campaignMessage.textContent =
-                    "Please complete all campaign details.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            if (title.length > 150 || description.length > 2000) {
-                campaignMessage.textContent =
-                    "Please check the title and description lengths.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            if (!safeVideoURL(videoURL)) {
-                campaignMessage.textContent =
-                    "Please enter a valid HTTPS video link.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            if (
-                !Number.isInteger(duration) ||
-                duration < 5 ||
-                duration > 300
-            ) {
-                campaignMessage.textContent =
-                    "Video duration must be between 5 and 300 seconds.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            if (
-                !Number.isFinite(reward) ||
-                reward <= 0 ||
-                reward > 100
-            ) {
-                campaignMessage.textContent =
-                    "Reward must be greater than $0 and not more than $100.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-
-            setLoading(advertiserCampaignForm, true);
-
-            campaignMessage.textContent =
-                "Submitting your advertising campaign...";
-
-            campaignMessage.style.color = "#ffcf70";
-
-            try {
-
-                const { data, error } = await db.rpc(
-                    "advertiser_submit_campaign",
-                    {
-                        p_title: title,
-                        p_description: description,
-                        p_video_url: videoURL,
-                        p_duration_seconds: duration,
-                        p_requested_reward_amount: reward
-                    }
-                );
-
-                if (error) throw error;
-
-                if (
-                    data &&
-                    (data.success === false || data.ok === false)
-                ) {
-                    throw new Error(
-                        data.message ||
-                        "Campaign submission was rejected."
-                    );
-                }
-
-                campaignMessage.textContent =
-                    "Campaign submitted successfully! " +
-                    "It is now waiting for admin review.";
-
-                campaignMessage.style.color = "#00e5a0";
-
-                advertiserCampaignForm.reset();
-
-                document.getElementById("campaignDuration").value = 15;
-
-            } catch (error) {
-
-                console.error(
-                    "Campaign submission error:",
-                    error
-                );
-
-                campaignMessage.textContent =
-                    "Campaign submission failed: " +
-                    (error.message || "Please try again.");
-
-                campaignMessage.style.color = "#ff7777";
-
-            } finally {
-
-                setLoading(advertiserCampaignForm, false);
-
-            }
-        }
-    );
-}// ========================================
-// ADVERTISER CAMPAIGN SUBMISSION
-// ========================================
-
-if (advertiserCampaignForm) {
-
-    advertiserCampaignForm.addEventListener(
-        "submit",
-        async function (event) {
-
-            event.preventDefault();
-
-            const campaignMessage =
-                document.getElementById("advertiserCampaignMessage");
-
-            if (!currentUser) {
-                campaignMessage.textContent =
-                    "Please log in before submitting a campaign.";
-                campaignMessage.style.color = "#ff7777";
-                return;
-            }
-            setLoading(advertiserCampaignForm, true);
-
-            campaignMessage.textContent =
-                "Submitting your advertising campaign...";
-
-            campaignMessage.style.color = "#ffcf70";
-
-            try {
-
-                const { data, error } = await db.rpc(
-                    "advertiser_submit_campaign",
-                    {
-                        p_title: title,
-                        p_description: description,
-                        p_video_url: videoURL,
-                        p_duration_seconds: duration,
-                        p_requested_reward_amount: reward
-                    }
-                );
-
-                if (error) throw error;
-
-                if (
-                    data &&
-                    (data.success === false || data.ok === false)
-                ) {
-                    throw new Error(
-                        data.message ||
-                        "Campaign submission was rejected."
-                    );
-                }
-
-                campaignMessage.textContent =
-                    "Campaign submitted successfully! " +
-                    "It is now waiting for admin review.";
-
-                campaignMessage.style.color = "#00e5a0";
-
-                advertiserCampaignForm.reset();
-
-                document.getElementById("campaignDuration").value = 15;
-            const title =
-                document.getElementById("campaignTitle").value.trim();
-
-            const description =
-                document.getElementById("campaignDescription").value.trim();
-
-            const videoURL =
-                document.getElementById("campaignVideoURL").value.trim();
-
-            const duration =
-                Number(document.getElementById("campaignDuration").value);
-
-            const reward =
-                Number(document.getElementById("campaignReward").value);
     // ========================================
     // REGISTRATION
     // ========================================
