@@ -2602,6 +2602,69 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     // ========================================
+    // ADVERTISER PAYMENT CAMPAIGN DROPDOWN
+    // ========================================
+
+    async function loadAdvertiserPaymentCampaigns(user) {
+        const select = document.getElementById("paymentAdvertisementId");
+        if (!select) return;
+
+        select.replaceChildren();
+        const loadingOption = document.createElement("option");
+        loadingOption.value = "";
+        loadingOption.textContent = "Loading your approved campaigns...";
+        select.appendChild(loadingOption);
+        select.disabled = true;
+
+        if (!user || !user.id) {
+            loadingOption.textContent = "Please sign in to view your campaigns.";
+            return;
+        }
+
+        try {
+            const { data, error } = await db
+                .from("advertiser_campaigns")
+                .select("id, title, advertisement_id, status")
+                .eq("user_id", user.id)
+                .eq("status", "approved")
+                .not("advertisement_id", "is", null)
+                .order("created_at", { ascending: false });
+
+            if (error) throw error;
+            if (currentUser?.id !== user.id) return;
+
+            select.replaceChildren();
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = data && data.length
+                ? "Select an approved campaign"
+                : "No approved campaigns available yet";
+            select.appendChild(placeholder);
+
+            const seen = new Set();
+            (data || []).forEach(campaign => {
+                if (!campaign.advertisement_id || seen.has(campaign.advertisement_id)) return;
+                seen.add(campaign.advertisement_id);
+                const option = document.createElement("option");
+                // Payment submissions and funding records use advertisement_id.
+                option.value = campaign.advertisement_id;
+                option.textContent = campaign.title || "Approved campaign";
+                select.appendChild(option);
+            });
+
+            select.disabled = seen.size === 0;
+        } catch (error) {
+            console.error("Advertiser payment campaign loading error:", error);
+            select.replaceChildren();
+            const failedOption = document.createElement("option");
+            failedOption.value = "";
+            failedOption.textContent = "Could not load campaigns. Please refresh.";
+            select.appendChild(failedOption);
+            select.disabled = true;
+        }
+    }
+
+    // ========================================
     // LOAD USER ACCOUNT
     // ========================================
 
@@ -2636,6 +2699,7 @@ document.addEventListener("DOMContentLoaded", async function () {
                     loadWallet(user),
                     loadAdvertisements(),
                     loadUserActivity(user),
+                    loadAdvertiserPaymentCampaigns(user),
                     checkAdminAccess(user)
                 ]);
 
@@ -2755,6 +2819,9 @@ document.addEventListener("DOMContentLoaded", async function () {
                     "Campaign submitted successfully! It is now waiting for admin review.";
                 campaignMessage.style.color = "#00e5a0";
                 advertiserCampaignForm.reset();
+                if (currentUser) {
+                    await loadAdvertiserPaymentCampaigns(currentUser);
+                }
 
                 const durationInput =
                     document.getElementById("campaignDuration");
